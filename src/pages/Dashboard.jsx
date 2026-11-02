@@ -14,7 +14,6 @@ import FirebaseConfigModal from '../components/FirebaseConfigModal';
 
 import { useRooms } from '../hooks/useRooms';
 import { useBookings } from '../hooks/useBookings';
-import { useActivities } from '../hooks/useActivities';
 
 import {
   computeRoomStatus,
@@ -37,7 +36,6 @@ import {
 export default function Dashboard() {
   const { rooms, loading: loadingRooms, initializeSampleRooms } = useRooms();
   const { bookings, loading: loadingBookings } = useBookings();
-  const { activities, loading: loadingActivities } = useActivities();
 
   // State
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -324,15 +322,12 @@ export default function Dashboard() {
           onSelectFilter={setFilterStatus}
         />
 
-        {/* 2. Daily Activity Section */}
+        {/* 2. Daily Operations Section */}
         <DailyActivity
           selectedDate={selectedDate}
           onDateChange={setSelectedDate}
           rooms={rooms}
           bookings={bookings}
-          activities={activities}
-          onSelectBooking={handleSelectBooking}
-          onClickRoom={handleClickRoom}
         />
 
         {/* 3. Room Availability Grid */}

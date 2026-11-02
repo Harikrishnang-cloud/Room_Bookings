@@ -17,33 +17,16 @@ export default function Header({
         <div className="flex items-center justify-between gap-2">
           {/* Brand & Titles */}
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 shrink-0">
+            {/* <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 shrink-0">
               <Building className="w-5 h-5 sm:w-6 sm:h-6" />
-            </div>
+            </div> */}
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <h1 className="text-base sm:text-2xl font-bold tracking-tight text-slate-900 truncate">
                   Apartment Rooms
                 </h1>
-                {/* Live status badge */}
-                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
-                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-ping" />
-                  Live
-                </span>
-                {/* Database badge */}
-                <button
-                  type="button"
-                  onClick={onOpenFirebaseConfig}
-                  className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium border transition-colors shrink-0 ${
-                    isFirebaseConfigured
-                      ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                      : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                  }`}
-                  title="Click to view or edit database settings"
-                >
-                  <Database className="w-3 h-3" />
-                  <span>{isFirebaseConfigured ? 'Firestore' : 'Local'}</span>
-                </button>
+                
+                
               </div>
               <p className="text-[11px] sm:text-sm text-slate-500 font-medium truncate hidden sm:block">
                 Room Availability Dashboard
