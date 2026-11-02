@@ -15,9 +15,7 @@ import FirebaseConfigModal from '../components/FirebaseConfigModal';
 import { useRooms } from '../hooks/useRooms';
 import { useBookings } from '../hooks/useBookings';
 
-import {
-  computeRoomStatus,
-  ROOM_STATUSES,
+import {computeRoomStatus,ROOM_STATUSES,
   BOOKING_STATUSES,
 } from '../utils/availability';
 import {
@@ -34,7 +32,7 @@ import {
 } from '../services/bookingService';
 
 export default function Dashboard() {
-  const { rooms, loading: loadingRooms, initializeSampleRooms } = useRooms();
+  const { rooms, loading: loadingRooms } = useRooms();
   const { bookings, loading: loadingBookings } = useBookings();
 
   // State
@@ -344,7 +342,7 @@ export default function Dashboard() {
           onCheckOut={handleCheckOutGuest}
           onSetStatus={handleSetRoomStatus}
           onViewBooking={handleSelectBooking}
-          onInitSampleRooms={initializeSampleRooms}
+          onOpenNewRoom={handleOpenAddRoom}
           loading={loadingRooms || loadingBookings}
         />
       </main>

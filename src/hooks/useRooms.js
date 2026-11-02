@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { subscribeRooms, initializeSampleRooms } from '../services/roomService';
+import { useState, useEffect } from 'react';
+import { subscribeRooms } from '../services/roomService';
 
 export function useRooms() {
   const [rooms, setRooms] = useState([]);
@@ -25,16 +25,5 @@ export function useRooms() {
     };
   }, []);
 
-  const handleInitSamples = useCallback(async () => {
-    try {
-      setLoading(true);
-      await initializeSampleRooms();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return { rooms, loading, error, initializeSampleRooms: handleInitSamples };
+  return { rooms, loading, error };
 }

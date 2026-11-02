@@ -4,7 +4,6 @@ import {
   collection,
   doc,
   addDoc,
-  setDoc,
   updateDoc,
   deleteDoc,
   getDocs,
@@ -13,7 +12,7 @@ import {
   query,
   orderBy,
 } from './firebase';
-import { mockStore, INITIAL_ROOMS } from './mockDataStore';
+import { mockStore } from './mockDataStore';
 import { logActivity } from './activityService';
 
 const COLLECTION_NAME = 'rooms';
@@ -81,12 +80,12 @@ export async function addRoom({ roomNumber, roomName = '', description = '' }) {
       roomId: created.id,
       roomNumber: created.roomNumber,
       activityType: 'Room Created',
-      description: `Room ${created.roomNumber} (${created.roomName || 'Apartment'}) created`,
+      description: `Room ${created.roomNumber} created`,
     });
     return created;
   }
 
-  // Firestore
+  // Firestore duplicate check
   const roomsSnap = await getDocs(collection(db, COLLECTION_NAME));
   const exists = roomsSnap.docs.some(
     (d) => d.data().roomNumber?.toLowerCase() === newRoomData.roomNumber.toLowerCase()
@@ -105,7 +104,7 @@ export async function addRoom({ roomNumber, roomName = '', description = '' }) {
     roomId: docRef.id,
     roomNumber: newRoomData.roomNumber,
     activityType: 'Room Created',
-    description: `Room ${newRoomData.roomNumber} (${newRoomData.roomName || 'Apartment'}) created`,
+    description: `Room ${newRoomData.roomNumber} created`,
   });
 
   return { id: docRef.id, ...newRoomData };
@@ -171,31 +170,4 @@ export async function deleteRoom(roomId, existingBookings = []) {
   }
 
   await deleteDoc(doc(db, COLLECTION_NAME, roomId));
-}
-
-/**
- * Initialize 10 sample rooms if collection is empty
- */
-export async function initializeSampleRooms() {
-  if (!isFirebaseConfigured || !db) {
-    mockStore.setRooms(INITIAL_ROOMS);
-    return INITIAL_ROOMS;
-  }
-
-  const snap = await getDocs(collection(db, COLLECTION_NAME));
-  if (!snap.empty) {
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  }
-
-  const created = [];
-  for (const r of INITIAL_ROOMS) {
-    const { id, ...roomData } = r;
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-      ...roomData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    created.push({ id: docRef.id, ...roomData });
-  }
-  return created;
 }

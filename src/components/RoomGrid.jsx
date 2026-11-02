@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, Layers, Sparkles } from 'lucide-react';
+import { Search, X, Layers, Plus } from 'lucide-react';
 import RoomCard from './RoomCard';
 import { ROOM_STATUSES } from '../utils/availability';
 
@@ -16,7 +16,7 @@ export default function RoomGrid({
   onCheckOut,
   onSetStatus,
   onViewBooking,
-  onInitSampleRooms,
+  onOpenNewRoom,
   loading = false,
 }) {
   const filterOptions = [
@@ -110,12 +110,12 @@ export default function RoomGrid({
             <Layers className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
           <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-1">
-            No rooms found
+            {searchQuery || filterStatus !== 'ALL' ? 'No rooms match your filter' : 'No rooms added yet'}
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto mb-4">
             {searchQuery || filterStatus !== 'ALL'
               ? 'Try adjusting your search criteria or resetting the active status filter.'
-              : 'There are currently no apartment rooms in the system.'}
+              : 'Add your apartment rooms to begin managing real-time availability and bookings.'}
           </p>
           <div className="flex items-center justify-center gap-2.5 flex-wrap">
             {(searchQuery || filterStatus !== 'ALL') ? (
@@ -132,11 +132,11 @@ export default function RoomGrid({
             ) : (
               <button
                 type="button"
-                onClick={onInitSampleRooms}
+                onClick={onOpenNewRoom}
                 className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs min-h-[44px] touch-manipulation"
               >
-                <Sparkles className="w-4 h-4" />
-                <span>Initialize 10 Sample Rooms</span>
+                <Plus className="w-4 h-4" />
+                <span>Add Your First Room</span>
               </button>
             )}
           </div>

@@ -1,18 +1,5 @@
 import React, { useState } from 'react';
-import {
-  DoorClosed,
-  ChevronRight,
-  User,
-  Calendar,
-  Clock,
-  Sparkles,
-  CheckCircle,
-  MoreVertical,
-  LogOut,
-  LogIn,
-  PlusCircle,
-  Eye,
-} from 'lucide-react';
+import {DoorClosed,ChevronRight,User,Calendar,Clock,Sparkles,CheckCircle,MoreVertical,LogOut,LogIn,PlusCircle,Eye,} from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { ROOM_STATUSES, STATUS_THEME, BOOKING_STATUSES } from '../utils/availability';
 import { formatDate, formatTime } from '../utils/dateHelpers';
@@ -29,7 +16,7 @@ export default function RoomCard({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const status = statusData.status || ROOM_STATUSES.AVAILABLE;
-  const activeBooking = statusData.activeBooking;
+  const activeBooking = statusData.activeBooking; 
   const upcomingBooking = statusData.upcomingBooking;
   const theme = STATUS_THEME[status] || STATUS_THEME[ROOM_STATUSES.AVAILABLE];
 
