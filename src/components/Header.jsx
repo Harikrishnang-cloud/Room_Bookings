@@ -25,10 +25,7 @@ export default function Header({
                 <h1 className="text-base sm:text-2xl font-bold tracking-tight text-slate-900 truncate">
                   Wave Home Stays
                 </h1>
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Live</span>
-                </div>
+                
               </div>
               <p className="text-[11px] sm:text-sm text-slate-500 font-medium truncate hidden sm:block">
                 Room Booking System
