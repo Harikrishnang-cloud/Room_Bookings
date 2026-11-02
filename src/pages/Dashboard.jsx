@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { toast } from 'react-toastify';
+import { Plus } from 'lucide-react';
 import Header from '../components/Header';
 import SummaryCards from '../components/SummaryCards';
 import RoomGrid from '../components/RoomGrid';
@@ -315,7 +316,7 @@ export default function Dashboard() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6 space-y-4 sm:space-y-6 pb-24 sm:pb-8">
         {/* 1. Summary Cards */}
         <SummaryCards
           counts={counts}
@@ -352,6 +353,27 @@ export default function Dashboard() {
           loading={loadingRooms || loadingBookings}
         />
       </main>
+
+      {/* Mobile Sticky Quick Action Bar */}
+      <div className="sm:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3.5 py-2.5 z-40 shadow-lg flex items-center gap-2 pb-safe">
+        <button
+          type="button"
+          onClick={handleOpenAddRoom}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-bold rounded-xl bg-slate-100 text-slate-800 border border-slate-300 active:bg-slate-200 transition-colors min-h-[44px] touch-manipulation"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Room</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleOpenNewBooking()}
+          className="flex-2 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md shadow-emerald-600/30 transition-all min-h-[44px] touch-manipulation"
+        >
+          <Plus className="w-4 h-4" />
+          <span>New Booking</span>
+        </button>
+      </div>
 
       {/* Modals */}
       <BookingForm

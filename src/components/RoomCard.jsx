@@ -36,24 +36,22 @@ export default function RoomCard({
   return (
     <div
       onClick={() => onClickRoom(room)}
-      className={`group relative bg-white rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md ${theme.borderClass} overflow-hidden flex flex-col justify-between`}
+      className={`group relative bg-white rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md active:bg-slate-50/50 touch-manipulation ${theme.borderClass} overflow-hidden flex flex-col justify-between`}
     >
       {/* Top Banner Accent */}
       <div className={`h-1.5 w-full ${theme.dotClass}`} />
 
       <div className="p-4 sm:p-5">
         {/* Header row: Room Number & Status */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold text-slate-700 bg-slate-100 group-hover:bg-slate-200 transition-colors`}>
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-slate-700 bg-slate-100 shrink-0`}>
               <DoorClosed className="w-5 h-5 text-slate-600" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
-                  Room {room.roomNumber}
-                </span>
-              </div>
+            <div className="min-w-0">
+              <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 block truncate">
+                Room {room.roomNumber}
+              </span>
               {room.roomName && (
                 <p className="text-xs text-slate-500 font-medium truncate max-w-[140px] sm:max-w-[180px]">
                   {room.roomName}
@@ -62,7 +60,7 @@ export default function RoomCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <StatusBadge status={status} size="sm" />
             <button
               type="button"
@@ -70,8 +68,8 @@ export default function RoomCard({
                 e.stopPropagation();
                 setMenuOpen(!menuOpen);
               }}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              aria-label="Room actions"
+              className="p-2 rounded-lg text-slate-400 hover:text-slate-700 active:bg-slate-100 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
+              aria-label="Room options"
             >
               <MoreVertical className="w-4 h-4" />
             </button>
@@ -83,7 +81,7 @@ export default function RoomCard({
           <div
             onClick={(e) => e.stopPropagation()}
             onMouseLeave={() => setMenuOpen(false)}
-            className="absolute right-4 top-14 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1.5 text-xs text-slate-700 font-medium animate-in fade-in"
+            className="absolute right-3 top-14 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-20 py-1.5 text-xs text-slate-700 font-medium animate-in fade-in"
           >
             <button
               type="button"
@@ -91,9 +89,9 @@ export default function RoomCard({
                 setMenuOpen(false);
                 onClickRoom(room);
               }}
-              className="w-full text-left px-3.5 py-2 hover:bg-slate-100 flex items-center gap-2"
+              className="w-full text-left px-4 py-2.5 hover:bg-slate-100 flex items-center gap-2.5 min-h-[40px] touch-manipulation"
             >
-              <Eye className="w-3.5 h-3.5 text-slate-500" />
+              <Eye className="w-4 h-4 text-slate-500" />
               <span>View Room Details</span>
             </button>
 
@@ -104,9 +102,9 @@ export default function RoomCard({
                   setMenuOpen(false);
                   onBookRoom(room);
                 }}
-                className="w-full text-left px-3.5 py-2 hover:bg-slate-100 flex items-center gap-2 text-emerald-700 font-semibold"
+                className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 flex items-center gap-2.5 text-emerald-700 font-semibold min-h-[40px] touch-manipulation"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
+                <PlusCircle className="w-4 h-4" />
                 <span>Create Booking</span>
               </button>
             )}
@@ -118,9 +116,9 @@ export default function RoomCard({
                   setMenuOpen(false);
                   onCheckIn(activeBooking, room);
                 }}
-                className="w-full text-left px-3.5 py-2 hover:bg-blue-50 flex items-center gap-2 text-blue-700 font-semibold"
+                className="w-full text-left px-4 py-2.5 hover:bg-blue-50 flex items-center gap-2.5 text-blue-700 font-semibold min-h-[40px] touch-manipulation"
               >
-                <LogIn className="w-3.5 h-3.5" />
+                <LogIn className="w-4 h-4" />
                 <span>Check-in Guest</span>
               </button>
             )}
@@ -132,9 +130,9 @@ export default function RoomCard({
                   setMenuOpen(false);
                   onCheckOut(activeBooking, room);
                 }}
-                className="w-full text-left px-3.5 py-2 hover:bg-rose-50 flex items-center gap-2 text-rose-700 font-semibold"
+                className="w-full text-left px-4 py-2.5 hover:bg-rose-50 flex items-center gap-2.5 text-rose-700 font-semibold min-h-[40px] touch-manipulation"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-4 h-4" />
                 <span>Check-out Guest</span>
               </button>
             )}
@@ -149,9 +147,9 @@ export default function RoomCard({
                       setMenuOpen(false);
                       onSetStatus(room.id, ROOM_STATUSES.CLEANING, room.roomNumber);
                     }}
-                    className="w-full text-left px-3.5 py-2 hover:bg-amber-50 flex items-center gap-2 text-amber-700"
+                    className="w-full text-left px-4 py-2.5 hover:bg-amber-50 flex items-center gap-2.5 text-amber-700 min-h-[40px] touch-manipulation"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Sparkles className="w-4 h-4" />
                     <span>Mark as Cleaning</span>
                   </button>
                 ) : (
@@ -161,9 +159,9 @@ export default function RoomCard({
                       setMenuOpen(false);
                       onSetStatus(room.id, ROOM_STATUSES.AVAILABLE, room.roomNumber);
                     }}
-                    className="w-full text-left px-3.5 py-2 hover:bg-emerald-50 flex items-center gap-2 text-emerald-700"
+                    className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 flex items-center gap-2.5 text-emerald-700 min-h-[40px] touch-manipulation"
                   >
-                    <CheckCircle className="w-3.5 h-3.5" />
+                    <CheckCircle className="w-4 h-4" />
                     <span>Mark as Available</span>
                   </button>
                 )}
@@ -173,7 +171,7 @@ export default function RoomCard({
         )}
 
         {/* Dynamic Status Details Section */}
-        <div className="mt-2 min-h-[64px] flex flex-col justify-center">
+        <div className="mt-2 min-h-[60px] flex flex-col justify-center">
           {activeBooking ? (
             <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
               <div className="flex items-center justify-between text-xs font-semibold text-slate-800 mb-1">
@@ -201,7 +199,7 @@ export default function RoomCard({
               <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
               <div className="truncate">
                 <p className="font-semibold truncate">Housekeeping in progress</p>
-                <p className="text-[11px] text-amber-600 truncate">Mark clean once finished</p>
+                <p className="text-[11px] text-amber-600 truncate">Mark clean once ready</p>
               </div>
             </div>
           ) : (
@@ -236,7 +234,7 @@ export default function RoomCard({
             <button
               type="button"
               onClick={() => onBookRoom(room)}
-              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition-colors shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium text-xs transition-colors shadow-xs min-h-[34px] flex items-center touch-manipulation"
             >
               Book
             </button>
@@ -246,7 +244,7 @@ export default function RoomCard({
             <button
               type="button"
               onClick={() => onSetStatus(room.id, ROOM_STATUSES.AVAILABLE, room.roomNumber)}
-              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition-colors shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium text-xs transition-colors shadow-xs min-h-[34px] flex items-center touch-manipulation"
             >
               Set Ready
             </button>
@@ -256,7 +254,7 @@ export default function RoomCard({
             <button
               type="button"
               onClick={() => onCheckIn(activeBooking, room)}
-              className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-colors shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-xs transition-colors shadow-xs min-h-[34px] flex items-center touch-manipulation"
             >
               Check In
             </button>
@@ -266,7 +264,7 @@ export default function RoomCard({
             <button
               type="button"
               onClick={() => onCheckOut(activeBooking, room)}
-              className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs transition-colors shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-medium text-xs transition-colors shadow-xs min-h-[34px] flex items-center touch-manipulation"
             >
               Check Out
             </button>

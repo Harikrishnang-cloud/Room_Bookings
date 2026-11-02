@@ -4,15 +4,12 @@ import {
   User,
   Phone,
   DoorClosed,
-  Calendar,
-  Clock,
-  DollarSign,
-  FileText,
-  Users,
   LogIn,
   LogOut,
   Edit2,
   Trash2,
+  Users,
+  FileText,
 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { formatDateTime, formatDate, formatTime } from '../utils/dateHelpers';
@@ -47,22 +44,25 @@ export default function BookingDetailsModal({
       : ROOM_STATUSES.BOOKED;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
+      <div className="bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+        {/* Mobile Swipe/Pull Indicator */}
+        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-2.5 block sm:hidden shrink-0" />
+
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-slate-700 font-bold">
+        <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-slate-700 font-bold shrink-0">
               <DoorClosed className="w-5 h-5 text-slate-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-slate-900">
                   Room {room?.roomNumber || 'N/A'}
                 </h2>
                 <StatusBadge status={badgeStatus} size="sm" />
               </div>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium truncate">
                 Booking ID: {booking.id}
               </p>
             </div>
@@ -70,14 +70,14 @@ export default function BookingDetailsModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center touch-manipulation"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-3.5 sm:space-y-4 overflow-y-auto touch-scroll">
           {/* Guest Information */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
@@ -100,9 +100,9 @@ export default function BookingDetailsModal({
           </div>
 
           {/* Booking Timing */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-              <span className="text-[11px] font-semibold text-slate-500 block mb-1">Check-In</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 block mb-0.5">Check-In</span>
               <p className="text-xs sm:text-sm font-bold text-slate-800">
                 {formatDate(booking.checkInDateTime, 'dd MMM yyyy')}
               </p>
@@ -112,7 +112,7 @@ export default function BookingDetailsModal({
             </div>
 
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-              <span className="text-[11px] font-semibold text-slate-500 block mb-1">Check-Out</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 block mb-0.5">Check-Out</span>
               <p className="text-xs sm:text-sm font-bold text-slate-800">
                 {formatDate(booking.checkOutDateTime, 'dd MMM yyyy')}
               </p>
@@ -123,17 +123,17 @@ export default function BookingDetailsModal({
           </div>
 
           {/* Payment & Charges */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 grid grid-cols-3 gap-2 text-center">
             <div>
-              <span className="text-[11px] font-semibold text-slate-500 block">Total Amount</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 block">Total</span>
               <span className="text-sm sm:text-base font-bold text-slate-800">${totalAmount.toFixed(2)}</span>
             </div>
             <div>
-              <span className="text-[11px] font-semibold text-emerald-600 block">Advance Paid</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 block">Advance</span>
               <span className="text-sm sm:text-base font-bold text-emerald-700">${advanceAmount.toFixed(2)}</span>
             </div>
             <div>
-              <span className="text-[11px] font-semibold text-rose-600 block">Balance Due</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold text-rose-600 block">Balance</span>
               <span className="text-sm sm:text-base font-bold text-rose-700">${balanceAmount.toFixed(2)}</span>
             </div>
           </div>
@@ -143,7 +143,7 @@ export default function BookingDetailsModal({
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mb-1">
                 <FileText className="w-3.5 h-3.5" />
-                <span>Special Notes / Requests</span>
+                <span>Special Notes</span>
               </div>
               <p className="text-xs text-slate-700 whitespace-pre-wrap">{booking.notes}</p>
             </div>
@@ -156,8 +156,8 @@ export default function BookingDetailsModal({
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between flex-wrap gap-2">
+        {/* Footer Actions with Large Touch Targets */}
+        <div className="p-3 sm:p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between flex-wrap gap-2 shrink-0 pb-safe">
           {status !== BOOKING_STATUSES.CANCELLED && (
             <button
               type="button"
@@ -165,10 +165,10 @@ export default function BookingDetailsModal({
                 onClose();
                 onCancel(booking, room);
               }}
-              className="px-3 py-1.5 text-xs font-semibold rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center gap-1.5"
+              className="px-3.5 py-2.5 text-xs font-semibold rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center gap-1.5 min-h-[42px] touch-manipulation"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Cancel Booking</span>
+              <Trash2 className="w-4 h-4" />
+              <span>Cancel</span>
             </button>
           )}
 
@@ -180,9 +180,9 @@ export default function BookingDetailsModal({
                   onClose();
                   onEdit(booking);
                 }}
-                className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors flex items-center gap-1.5"
+                className="px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors flex items-center gap-1.5 min-h-[42px] touch-manipulation"
               >
-                <Edit2 className="w-3.5 h-3.5" />
+                <Edit2 className="w-4 h-4" />
                 <span>Edit</span>
               </button>
             )}
@@ -194,10 +194,10 @@ export default function BookingDetailsModal({
                   onClose();
                   onCheckIn(booking, room);
                 }}
-                className="px-4 py-1.5 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-1.5 shadow-xs"
+                className="px-4 py-2.5 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white transition-colors flex items-center gap-1.5 shadow-xs min-h-[42px] touch-manipulation"
               >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Check In Guest</span>
+                <LogIn className="w-4 h-4" />
+                <span>Check In</span>
               </button>
             )}
 
@@ -208,10 +208,10 @@ export default function BookingDetailsModal({
                   onClose();
                   onCheckOut(booking, room);
                 }}
-                className="px-4 py-1.5 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-colors flex items-center gap-1.5 shadow-xs"
+                className="px-4 py-2.5 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white transition-colors flex items-center gap-1.5 shadow-xs min-h-[42px] touch-manipulation"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Check Out Guest</span>
+                <LogOut className="w-4 h-4" />
+                <span>Check Out</span>
               </button>
             )}
           </div>

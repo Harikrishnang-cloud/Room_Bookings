@@ -28,12 +28,13 @@ export default function DateSelector({ selectedDate, onDateChange }) {
   const relativeLabel = getRelativeLabel();
 
   return (
-    <div className="flex items-center justify-between gap-2 bg-slate-50 p-2 sm:p-2.5 rounded-xl border border-slate-200">
-      <div className="flex items-center gap-1">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-slate-50 p-2 sm:p-2.5 rounded-xl border border-slate-200">
+      {/* Navigation Buttons */}
+      <div className="flex items-center justify-between sm:justify-start gap-1">
         <button
           type="button"
           onClick={handlePrevDay}
-          className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all"
+          className="p-2 sm:p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all min-h-[40px] min-w-[40px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center touch-manipulation"
           title="Previous day"
           aria-label="Previous day"
         >
@@ -43,10 +44,10 @@ export default function DateSelector({ selectedDate, onDateChange }) {
         <button
           type="button"
           onClick={handleToday}
-          className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
+          className={`flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors min-h-[40px] sm:min-h-[32px] flex items-center justify-center touch-manipulation ${
             isToday(currentDate)
               ? 'bg-emerald-600 text-white shadow-xs'
-              : 'text-slate-600 hover:bg-white hover:text-slate-900'
+              : 'text-slate-600 hover:bg-white hover:text-slate-900 bg-white/60'
           }`}
         >
           Today
@@ -55,7 +56,7 @@ export default function DateSelector({ selectedDate, onDateChange }) {
         <button
           type="button"
           onClick={handleNextDay}
-          className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all"
+          className="p-2 sm:p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all min-h-[40px] min-w-[40px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center touch-manipulation"
           title="Next day"
           aria-label="Next day"
         >
@@ -63,34 +64,30 @@ export default function DateSelector({ selectedDate, onDateChange }) {
         </button>
       </div>
 
-      {/* Date Picker & Label */}
-      <div className="flex items-center gap-2">
-        <div className="text-right">
-          <div className="text-xs sm:text-sm font-bold text-slate-800 flex items-center justify-end gap-1.5">
-            <span>{format(currentDate, 'EEE, dd MMM yyyy')}</span>
-            {relativeLabel && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
-                {relativeLabel}
-              </span>
-            )}
-          </div>
+      {/* Date Display & Picker */}
+      <label className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 shadow-xs cursor-pointer min-h-[40px] sm:min-h-[32px] touch-manipulation hover:border-slate-300">
+        <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">
+          <span>{format(currentDate, 'EEE, dd MMM yyyy')}</span>
+          {relativeLabel && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+              {relativeLabel}
+            </span>
+          )}
         </div>
 
-        <label className="relative cursor-pointer p-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-colors">
-          <CalendarIcon className="w-4 h-4" />
-          <input
-            type="date"
-            value={format(currentDate, 'yyyy-MM-dd')}
-            onChange={(e) => {
-              if (e.target.value) {
-                const [y, m, d] = e.target.value.split('-').map(Number);
-                onDateChange(new Date(y, m - 1, d, 12, 0, 0));
-              }
-            }}
-            className="sr-only"
-          />
-        </label>
-      </div>
+        <CalendarIcon className="w-4 h-4 text-slate-500 shrink-0 ml-1" />
+        <input
+          type="date"
+          value={format(currentDate, 'yyyy-MM-dd')}
+          onChange={(e) => {
+            if (e.target.value) {
+              const [y, m, d] = e.target.value.split('-').map(Number);
+              onDateChange(new Date(y, m - 1, d, 12, 0, 0));
+            }
+          }}
+          className="sr-only"
+        />
+      </label>
     </div>
   );
 }
