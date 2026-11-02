@@ -1,22 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import {
-  getFirestore,
-  collection,
-  doc,
-  addDoc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  getDoc,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  runTransaction,
-  serverTimestamp,
-  Timestamp,
-} from 'firebase/firestore';
+import {getFirestore,collection,doc,addDoc,setDoc,updateDoc,
+  deleteDoc,getDocs,getDoc,query,where,orderBy,onSnapshot,runTransaction,serverTimestamp,Timestamp,} from 'firebase/firestore';
 
 const STORAGE_KEY_CONFIG = 'room_booking_firebase_config';
 

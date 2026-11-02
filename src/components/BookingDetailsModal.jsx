@@ -10,6 +10,7 @@ import {
   Trash2,
   Users,
   FileText,
+  Clock,
 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { formatDateTime, formatDate, formatTime } from '../utils/dateHelpers';
@@ -29,9 +30,6 @@ export default function BookingDetailsModal({
 
   const room = rooms.find((r) => r.id === booking.roomId);
   const status = booking.bookingStatus || BOOKING_STATUSES.CONFIRMED;
-  const totalAmount = Number(booking.bookingAmount) || 0;
-  const advanceAmount = Number(booking.advanceAmount) || 0;
-  const balanceAmount = Math.max(0, totalAmount - advanceAmount);
 
   // Status map to badge status
   const badgeStatus =
@@ -99,44 +97,41 @@ export default function BookingDetailsModal({
             </div>
           </div>
 
-          {/* Booking Timing */}
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-              <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 block mb-0.5">Check-In</span>
-              <p className="text-xs sm:text-sm font-bold text-slate-800">
-                {formatDate(booking.checkInDateTime, 'dd MMM yyyy')}
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {formatTime(booking.checkInDateTime)}
-              </p>
+          {/* Booking Timing & Duration */}
+          <div>
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1.5 px-0.5">
+              <span className="flex items-center gap-1.5 text-slate-600">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                Schedule
+              </span>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                {booking.durationLabel || `${Math.max(1, Math.round((new Date(booking.checkOutDateTime) - new Date(booking.checkInDateTime)) / (1000 * 60 * 60)))} Hours`}
+              </span>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-              <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 block mb-0.5">Check-Out</span>
-              <p className="text-xs sm:text-sm font-bold text-slate-800">
-                {formatDate(booking.checkOutDateTime, 'dd MMM yyyy')}
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {formatTime(booking.checkOutDateTime)}
-              </p>
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 block mb-0.5">Check-In</span>
+                <p className="text-xs sm:text-sm font-bold text-slate-800">
+                  {formatDate(booking.checkInDateTime, 'dd MMM yyyy')}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {formatTime(booking.checkInDateTime)}
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 block mb-0.5">Check-Out</span>
+                <p className="text-xs sm:text-sm font-bold text-slate-800">
+                  {formatDate(booking.checkOutDateTime, 'dd MMM yyyy')}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {formatTime(booking.checkOutDateTime)}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Payment & Charges */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 grid grid-cols-3 gap-2 text-center">
-            <div>
-              <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 block">Total</span>
-              <span className="text-sm sm:text-base font-bold text-slate-800">${totalAmount.toFixed(2)}</span>
-            </div>
-            <div>
-              <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 block">Advance</span>
-              <span className="text-sm sm:text-base font-bold text-emerald-700">${advanceAmount.toFixed(2)}</span>
-            </div>
-            <div>
-              <span className="text-[10px] sm:text-[11px] font-semibold text-rose-600 block">Balance</span>
-              <span className="text-sm sm:text-base font-bold text-rose-700">${balanceAmount.toFixed(2)}</span>
-            </div>
-          </div>
 
           {/* Notes */}
           {booking.notes && (

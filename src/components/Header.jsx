@@ -23,13 +23,11 @@ export default function Header({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <h1 className="text-base sm:text-2xl font-bold tracking-tight text-slate-900 truncate">
-                  Apartment Rooms
+                  Wave Home Stays
                 </h1>
-                
-                
               </div>
               <p className="text-[11px] sm:text-sm text-slate-500 font-medium truncate hidden sm:block">
-                Room Availability Dashboard
+                Room Booking System
               </p>
             </div>
           </div>

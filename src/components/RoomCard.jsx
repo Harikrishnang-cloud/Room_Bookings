@@ -166,8 +166,8 @@ export default function RoomCard({
                   <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <span className="truncate">{activeBooking.guestName}</span>
                 </span>
-                <span className="text-[11px] text-slate-500 font-normal shrink-0">
-                  {activeBooking.numberOfGuests} guest{activeBooking.numberOfGuests > 1 ? 's' : ''}
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                  {activeBooking.durationLabel || `${activeBooking.numberOfGuests || 1} guest`}
                 </span>
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-500">

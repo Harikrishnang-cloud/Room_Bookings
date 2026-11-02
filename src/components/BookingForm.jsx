@@ -1,8 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { X, User, Phone, DoorClosed, AlertTriangle } from 'lucide-react';
+import { X, User, Phone, DoorClosed, Clock, AlertTriangle } from 'lucide-react';
 import { validateBookingForm, checkBookingConflict } from '../utils/bookingValidation';
 import { BOOKING_STATUSES, ROOM_STATUSES, computeRoomStatus } from '../utils/availability';
+
+function getDurationHours(option, customVal) {
+  if (option === '3hr') return 3;
+  if (option === '6hr') return 6;
+  if (option === '1day') return 24;
+  if (option === 'custom') {
+    const val = parseFloat(customVal);
+    return isNaN(val) || val <= 0 ? null : val;
+  }
+  return 24;
+}
+
+function getDurationLabel(option, customVal) {
+  if (option === '3hr') return '3 Hours';
+  if (option === '6hr') return '6 Hours';
+  if (option === '1day') return '1 Day';
+  if (option === 'custom') {
+    const val = parseFloat(customVal);
+    if (!val || isNaN(val) || val <= 0) return 'Custom';
+    return val === 1 ? '1 Hour' : `${val} Hours`;
+  }
+  return '1 Day';
+}
 
 export default function BookingForm({
   isOpen,
@@ -15,11 +38,13 @@ export default function BookingForm({
 }) {
   const isEditing = Boolean(initialData && initialData.id);
 
-  // Form State: only name, phone number, and assigned room
+  // Form State: name, phone number, time duration (3hr, 6hr, 1 day, custom), and assigned room
   const [formData, setFormData] = useState({
     guestName: '',
     mobileNumber: '',
     roomId: '',
+    durationOption: '1day',
+    customHours: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -30,10 +55,28 @@ export default function BookingForm({
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
+        let initialDurationOption = initialData.durationOption;
+        let initialCustomHours = initialData.durationHours ? String(initialData.durationHours) : '';
+
+        if (!initialDurationOption && initialData.checkInDateTime && initialData.checkOutDateTime) {
+          const diffHours = Math.round(
+            (new Date(initialData.checkOutDateTime) - new Date(initialData.checkInDateTime)) / (1000 * 60 * 60)
+          );
+          if (diffHours === 3) initialDurationOption = '3hr';
+          else if (diffHours === 6) initialDurationOption = '6hr';
+          else if (diffHours === 24) initialDurationOption = '1day';
+          else if (diffHours > 0) {
+            initialDurationOption = 'custom';
+            initialCustomHours = String(diffHours);
+          }
+        }
+
         setFormData({
           guestName: initialData.guestName || '',
           mobileNumber: initialData.mobileNumber || '',
           roomId: initialData.roomId || '',
+          durationOption: initialDurationOption || '1day',
+          customHours: initialCustomHours,
         });
       } else {
         // Pick preselected room or first available room, or first room
@@ -50,6 +93,8 @@ export default function BookingForm({
           guestName: '',
           mobileNumber: '',
           roomId: defaultRoomId || '',
+          durationOption: '1day',
+          customHours: '',
         });
       }
       setErrors({});
@@ -58,17 +103,21 @@ export default function BookingForm({
     }
   }, [isOpen, initialData, preselectedRoomId, rooms, bookings]);
 
-  // Check conflict for selected room
+  // Check conflict for selected room and computed duration
   useEffect(() => {
     if (!formData.roomId) {
       setConflictWarning(null);
       return;
     }
 
+    const hours = getDurationHours(formData.durationOption, formData.customHours);
+    if (!hours || hours <= 0) {
+      setConflictWarning(null);
+      return;
+    }
+
     const checkInDateTime = initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : new Date();
-    const checkOutDateTime = initialData?.checkOutDateTime
-      ? new Date(initialData.checkOutDateTime)
-      : new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours later
+    const checkOutDateTime = new Date(checkInDateTime.getTime() + hours * 60 * 60 * 1000);
 
     const result = checkBookingConflict({
       roomId: formData.roomId,
@@ -83,32 +132,44 @@ export default function BookingForm({
     } else {
       setConflictWarning(null);
     }
-  }, [formData.roomId, bookings, initialData]);
+  }, [formData.roomId, formData.durationOption, formData.customHours, bookings, initialData]);
 
   if (!isOpen) return null;
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
+    if (errors[field] || (field === 'durationOption' && errors.duration)) {
+      setErrors((prev) => ({ ...prev, [field]: null, duration: null }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Default dates: check-in is now, check-out is tomorrow noon
+    if (formData.durationOption === 'custom') {
+      const hoursVal = parseFloat(formData.customHours);
+      if (!hoursVal || isNaN(hoursVal) || hoursVal <= 0) {
+        setErrors((prev) => ({ ...prev, duration: 'Please enter a valid number of hours' }));
+        toast.error('Please enter valid custom hours');
+        return;
+      }
+    }
+
+    const hours = getDurationHours(formData.durationOption, formData.customHours) || 24;
     const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(11, 0, 0, 0);
+    const checkIn = initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : now;
+    const checkOut = new Date(checkIn.getTime() + hours * 60 * 60 * 1000);
+    const durationLabel = getDurationLabel(formData.durationOption, formData.customHours);
 
     const submissionPayload = {
       guestName: formData.guestName,
       mobileNumber: formData.mobileNumber,
       roomId: formData.roomId,
-      checkInDateTime: initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : now,
-      checkOutDateTime: initialData?.checkOutDateTime ? new Date(initialData.checkOutDateTime) : tomorrow,
+      durationOption: formData.durationOption,
+      durationHours: hours,
+      durationLabel,
+      checkInDateTime: checkIn,
+      checkOutDateTime: checkOut,
       numberOfGuests: initialData?.numberOfGuests || 1,
       bookingAmount: initialData?.bookingAmount || 0,
       advanceAmount: initialData?.advanceAmount || 0,
@@ -235,7 +296,79 @@ export default function BookingForm({
             )}
           </div>
 
-          {/* 3. Assigned Room */}
+          {/* 3. Duration / Time Selection (3hr, 6hr, 1 day, custom) */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                Duration <span className="text-rose-500">*</span>
+              </span>
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                {getDurationLabel(formData.durationOption, formData.customHours)}
+              </span>
+            </label>
+
+            {/* Checkbox options: 3hr, 6hr, 1 day, custom */}
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { id: '3hr', label: '3hr' },
+                { id: '6hr', label: '6hr' },
+                { id: '1day', label: '1 day' },
+                { id: 'custom', label: 'Custom' },
+              ].map((opt) => {
+                const isSelected = formData.durationOption === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleChange('durationOption', opt.id)}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl border text-xs font-semibold cursor-pointer select-none transition-all touch-manipulation min-h-[44px] ${
+                      isSelected
+                        ? 'border-emerald-600 bg-emerald-50 text-emerald-800 shadow-xs ring-1 ring-emerald-500 font-bold'
+                        : 'border-slate-200 bg-slate-50/70 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      readOnly
+                      className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer pointer-events-none"
+                    />
+                    <span className="truncate">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom Input Box if 'custom' is selected */}
+            {formData.durationOption === 'custom' && (
+              <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    max="720"
+                    step="1"
+                    placeholder="Enter custom duration (e.g. 4, 12, 48)"
+                    value={formData.customHours}
+                    onChange={(e) => handleChange('customHours', e.target.value)}
+                    className={`w-full pl-3 pr-14 py-2.5 text-base sm:text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] ${
+                      errors.duration ? 'border-rose-400' : 'border-slate-200'
+                    }`}
+                    autoFocus
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+                    hours
+                  </span>
+                </div>
+                {errors.duration && (
+                  <p className="text-[11px] text-rose-500 font-medium mt-1">{errors.duration}</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 4. Assigned Room */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               Assigned Room <span className="text-rose-500">*</span>

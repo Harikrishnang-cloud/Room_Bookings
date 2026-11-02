@@ -9,3 +9,4 @@ Thumbs.db
 serviceAccountKey.json
 *service_account*.json
 initFirestore.js
+getApiKey.js
