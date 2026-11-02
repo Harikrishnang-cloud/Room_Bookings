@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { X, Calendar, Clock, AlertTriangle, User, Phone, DollarSign, FileText, Users } from 'lucide-react';
-import {
-  toDateInputValue,
-  toTimeInputValue,
-  combineDateAndTime,
-} from '../utils/dateHelpers';
+import { X, User, Phone, DoorClosed, AlertTriangle } from 'lucide-react';
 import { validateBookingForm, checkBookingConflict } from '../utils/bookingValidation';
-import { BOOKING_STATUSES } from '../utils/availability';
+import { BOOKING_STATUSES, ROOM_STATUSES, computeRoomStatus } from '../utils/availability';
 
 export default function BookingForm({
   isOpen,
@@ -20,20 +15,11 @@ export default function BookingForm({
 }) {
   const isEditing = Boolean(initialData && initialData.id);
 
-  // Form State
+  // Form State: only name, phone number, and assigned room
   const [formData, setFormData] = useState({
     guestName: '',
     mobileNumber: '',
     roomId: '',
-    checkInDate: toDateInputValue(new Date()),
-    checkInTime: '12:00',
-    checkOutDate: toDateInputValue(new Date(Date.now() + 86400000)), // tomorrow
-    checkOutTime: '11:00',
-    numberOfGuests: 1,
-    bookingAmount: '',
-    advanceAmount: '',
-    notes: '',
-    bookingStatus: BOOKING_STATUSES.CONFIRMED,
   });
 
   const [errors, setErrors] = useState({});
@@ -48,56 +34,41 @@ export default function BookingForm({
           guestName: initialData.guestName || '',
           mobileNumber: initialData.mobileNumber || '',
           roomId: initialData.roomId || '',
-          checkInDate: toDateInputValue(initialData.checkInDateTime),
-          checkInTime: toTimeInputValue(initialData.checkInDateTime),
-          checkOutDate: toDateInputValue(initialData.checkOutDateTime),
-          checkOutTime: toTimeInputValue(initialData.checkOutDateTime),
-          numberOfGuests: initialData.numberOfGuests || 1,
-          bookingAmount: initialData.bookingAmount ?? '',
-          advanceAmount: initialData.advanceAmount ?? '',
-          notes: initialData.notes || '',
-          bookingStatus: initialData.bookingStatus || BOOKING_STATUSES.CONFIRMED,
         });
       } else {
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        // Pick preselected room or first available room, or first room
+        let defaultRoomId = preselectedRoomId;
+        if (!defaultRoomId && rooms.length > 0) {
+          const firstAvailable = rooms.find((r) => {
+            const st = computeRoomStatus(r, bookings, new Date());
+            return st.status === ROOM_STATUSES.AVAILABLE;
+          });
+          defaultRoomId = firstAvailable ? firstAvailable.id : rooms[0].id;
+        }
 
         setFormData({
           guestName: '',
           mobileNumber: '',
-          roomId: preselectedRoomId || (rooms.length > 0 ? rooms[0].id : ''),
-          checkInDate: toDateInputValue(today),
-          checkInTime: '12:00',
-          checkOutDate: toDateInputValue(tomorrow),
-          checkOutTime: '11:00',
-          numberOfGuests: 1,
-          bookingAmount: '',
-          advanceAmount: '',
-          notes: '',
-          bookingStatus: BOOKING_STATUSES.CONFIRMED,
+          roomId: defaultRoomId || '',
         });
       }
       setErrors({});
       setConflictWarning(null);
       setIsSubmitting(false);
     }
-  }, [isOpen, initialData, preselectedRoomId, rooms]);
+  }, [isOpen, initialData, preselectedRoomId, rooms, bookings]);
 
-  // Real-time conflict validation effect
+  // Check conflict for selected room
   useEffect(() => {
-    if (!formData.roomId || !formData.checkInDate || !formData.checkOutDate) {
+    if (!formData.roomId) {
       setConflictWarning(null);
       return;
     }
 
-    const checkInDateTime = combineDateAndTime(formData.checkInDate, formData.checkInTime);
-    const checkOutDateTime = combineDateAndTime(formData.checkOutDate, formData.checkOutTime);
-
-    if (!checkInDateTime || !checkOutDateTime || checkInDateTime >= checkOutDateTime) {
-      setConflictWarning(null);
-      return;
-    }
+    const checkInDateTime = initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : new Date();
+    const checkOutDateTime = initialData?.checkOutDateTime
+      ? new Date(initialData.checkOutDateTime)
+      : new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours later
 
     const result = checkBookingConflict({
       roomId: formData.roomId,
@@ -112,15 +83,7 @@ export default function BookingForm({
     } else {
       setConflictWarning(null);
     }
-  }, [
-    formData.roomId,
-    formData.checkInDate,
-    formData.checkInTime,
-    formData.checkOutDate,
-    formData.checkOutTime,
-    bookings,
-    initialData,
-  ]);
+  }, [formData.roomId, bookings, initialData]);
 
   if (!isOpen) return null;
 
@@ -134,20 +97,23 @@ export default function BookingForm({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const checkInDateTime = combineDateAndTime(formData.checkInDate, formData.checkInTime);
-    const checkOutDateTime = combineDateAndTime(formData.checkOutDate, formData.checkOutTime);
+    // Default dates: check-in is now, check-out is tomorrow noon
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(11, 0, 0, 0);
 
     const submissionPayload = {
       guestName: formData.guestName,
       mobileNumber: formData.mobileNumber,
       roomId: formData.roomId,
-      checkInDateTime,
-      checkOutDateTime,
-      numberOfGuests: Number(formData.numberOfGuests),
-      bookingAmount: Number(formData.bookingAmount) || 0,
-      advanceAmount: Number(formData.advanceAmount) || 0,
-      notes: formData.notes,
-      bookingStatus: formData.bookingStatus,
+      checkInDateTime: initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : now,
+      checkOutDateTime: initialData?.checkOutDateTime ? new Date(initialData.checkOutDateTime) : tomorrow,
+      numberOfGuests: initialData?.numberOfGuests || 1,
+      bookingAmount: initialData?.bookingAmount || 0,
+      advanceAmount: initialData?.advanceAmount || 0,
+      notes: initialData?.notes || '',
+      bookingStatus: initialData?.bookingStatus || BOOKING_STATUSES.CONFIRMED,
     };
 
     const validation = validateBookingForm(submissionPayload);
@@ -159,7 +125,7 @@ export default function BookingForm({
     }
 
     if (conflictWarning) {
-      setErrors((prev) => ({ ...prev, dates: conflictWarning }));
+      setErrors((prev) => ({ ...prev, form: conflictWarning }));
       toast.error(conflictWarning);
       return;
     }
@@ -179,7 +145,7 @@ export default function BookingForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div className="bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+      <div className="bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
         {/* Mobile Swipe/Pull Indicator */}
         <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-2.5 block sm:hidden shrink-0" />
 
@@ -190,7 +156,7 @@ export default function BookingForm({
               {isEditing ? 'Edit Booking' : 'New Room Booking'}
             </h2>
             <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-              {isEditing ? 'Update guest or reservation details' : 'Reserve an apartment room'}
+              Enter guest name, phone, and assign room
             </p>
           </div>
           <button
@@ -202,8 +168,8 @@ export default function BookingForm({
           </button>
         </div>
 
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-5 overflow-y-auto space-y-3.5 sm:space-y-4 touch-scroll pb-safe">
+        {/* Modal Body - Clean & Minimal Form */}
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto touch-scroll pb-safe">
           {errors.form && (
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -216,226 +182,92 @@ export default function BookingForm({
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">Booking Date Conflict</p>
+                <p className="font-bold">Room Already Booked</p>
                 <p>{conflictWarning}</p>
               </div>
             </div>
           )}
 
-          {/* Guest Name & Mobile */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Guest Name <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. John Doe"
-                  value={formData.guestName}
-                  onChange={(e) => handleChange('guestName', e.target.value)}
-                  className={`w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] sm:min-h-[38px] ${
-                    errors.guestName ? 'border-rose-400' : 'border-slate-200'
-                  }`}
-                />
-              </div>
-              {errors.guestName && (
-                <p className="text-[11px] text-rose-500 font-medium mt-1">{errors.guestName}</p>
-              )}
+          {/* 1. Guest Name */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Guest Name <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                required
+                autoFocus
+                placeholder="Enter guest full name"
+                value={formData.guestName}
+                onChange={(e) => handleChange('guestName', e.target.value)}
+                className={`w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] ${
+                  errors.guestName ? 'border-rose-400' : 'border-slate-200'
+                }`}
+              />
             </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Mobile Number <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="tel"
-                  required
-                  placeholder="e.g. +1 555-0199"
-                  value={formData.mobileNumber}
-                  onChange={(e) => handleChange('mobileNumber', e.target.value)}
-                  className={`w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] sm:min-h-[38px] ${
-                    errors.mobileNumber ? 'border-rose-400' : 'border-slate-200'
-                  }`}
-                />
-              </div>
-              {errors.mobileNumber && (
-                <p className="text-[11px] text-rose-500 font-medium mt-1">{errors.mobileNumber}</p>
-              )}
-            </div>
+            {errors.guestName && (
+              <p className="text-[11px] text-rose-500 font-medium mt-1">{errors.guestName}</p>
+            )}
           </div>
 
-          {/* Room Selection & Number of Guests */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-3.5">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Room Selection <span className="text-rose-500">*</span>
-              </label>
+          {/* 2. Phone Number */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Phone Number <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="tel"
+                required
+                placeholder="e.g. 9876543210"
+                value={formData.mobileNumber}
+                onChange={(e) => handleChange('mobileNumber', e.target.value)}
+                className={`w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] ${
+                  errors.mobileNumber ? 'border-rose-400' : 'border-slate-200'
+                }`}
+              />
+            </div>
+            {errors.mobileNumber && (
+              <p className="text-[11px] text-rose-500 font-medium mt-1">{errors.mobileNumber}</p>
+            )}
+          </div>
+
+          {/* 3. Assigned Room */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Assigned Room <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <DoorClosed className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <select
                 required
                 value={formData.roomId}
                 onChange={(e) => handleChange('roomId', e.target.value)}
-                className={`w-full px-3 py-2.5 text-base sm:text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] sm:min-h-[38px] ${
+                className={`w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] ${
                   errors.roomId ? 'border-rose-400' : 'border-slate-200'
                 }`}
               >
                 <option value="">Select a room...</option>
-                {rooms.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    Room {r.roomNumber} {r.roomName ? `• ${r.roomName}` : ''}
-                  </option>
-                ))}
+                {rooms.map((r) => {
+                  const roomStatus = computeRoomStatus(r, bookings, new Date()).status;
+                  const isAvailable = roomStatus === ROOM_STATUSES.AVAILABLE;
+                  return (
+                    <option key={r.id} value={r.id}>
+                      Room {r.roomNumber} {r.roomName ? `• ${r.roomName}` : ''} {!isAvailable ? `(${roomStatus})` : '• Available'}
+                    </option>
+                  );
+                })}
               </select>
-              {errors.roomId && (
-                <p className="text-[11px] text-rose-500 font-medium mt-1">{errors.roomId}</p>
-              )}
             </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Guests <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <Users className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="number"
-                  min="1"
-                  max="12"
-                  value={formData.numberOfGuests}
-                  onChange={(e) => handleChange('numberOfGuests', e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] sm:min-h-[38px]"
-                />
-              </div>
-            </div>
+            {errors.roomId && (
+              <p className="text-[11px] text-rose-500 font-medium mt-1">{errors.roomId}</p>
+            )}
           </div>
 
-          {/* Check-In Details */}
-          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-2">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-              Check-In Schedule
-            </span>
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.checkInDate}
-                  onChange={(e) => handleChange('checkInDate', e.target.value)}
-                  className="w-full px-2.5 py-2 text-base sm:text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[40px] sm:min-h-[34px]"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Time
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={formData.checkInTime}
-                  onChange={(e) => handleChange('checkInTime', e.target.value)}
-                  className="w-full px-2.5 py-2 text-base sm:text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[40px] sm:min-h-[34px]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Check-Out Details */}
-          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-2">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-              Check-Out Schedule
-            </span>
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.checkOutDate}
-                  onChange={(e) => handleChange('checkOutDate', e.target.value)}
-                  className="w-full px-2.5 py-2 text-base sm:text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[40px] sm:min-h-[34px]"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Time
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={formData.checkOutTime}
-                  onChange={(e) => handleChange('checkOutTime', e.target.value)}
-                  className="w-full px-2.5 py-2 text-base sm:text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[40px] sm:min-h-[34px]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Amounts: Booking Amount & Advance */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Amount ($)
-              </label>
-              <div className="relative">
-                <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.bookingAmount}
-                  onChange={(e) => handleChange('bookingAmount', e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 text-base sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] sm:min-h-[38px]"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Advance ($)
-              </label>
-              <div className="relative">
-                <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.advanceAmount}
-                  onChange={(e) => handleChange('advanceAmount', e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 text-base sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] sm:min-h-[38px]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Notes / Special Requests (Optional)
-            </label>
-            <div className="relative">
-              <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <textarea
-                rows="2"
-                placeholder="Any special requests, arrival notes..."
-                value={formData.notes}
-                onChange={(e) => handleChange('notes', e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-base sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              />
-            </div>
-          </div>
-
-          {/* Modal Actions */}
+          {/* Form Actions */}
           <div className="pt-3 pb-1 border-t border-slate-200 flex items-center justify-end gap-2.5">
             <button
               type="button"
