@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { Plus } from 'lucide-react';
 import Header from '../components/Header';
@@ -44,6 +44,14 @@ export default function Dashboard() {
     onConfirm: () => { },
   });
 
+  // Automatic 15-second clock tick to update real-time room statuses as time passes
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLastUpdated(new Date());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Calculate real-time status for all rooms
   const roomStatusMap = useMemo(() => {
     const map = {};
@@ -52,7 +60,7 @@ export default function Dashboard() {
       map[room.id] = computeRoomStatus(room, bookings, now);
     });
     return map;
-  }, [rooms, bookings]);
+  }, [rooms, bookings, lastUpdated]);
 
   // Calculate Summary Counts
   const counts = useMemo(() => {

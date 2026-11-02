@@ -38,14 +38,35 @@ export function subscribeBookings(callback, onError) {
     });
   }
 
-  const q = query(collection(db, COLLECTION_NAME), orderBy('checkInDateTime', 'asc'));
   return onSnapshot(
-    q,
+    collection(db, COLLECTION_NAME),
     (snapshot) => {
-      const bookings = snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }));
+      const bookings = snapshot.docs.map((docSnap) => {
+        const d = docSnap.data();
+        // Normalize checkInDateTime and checkOutDateTime if stored as Firestore Timestamps or strings
+        let checkIn = d.checkInDateTime;
+        if (checkIn && typeof checkIn.toDate === 'function') {
+          checkIn = checkIn.toDate().toISOString();
+        }
+        let checkOut = d.checkOutDateTime;
+        if (checkOut && typeof checkOut.toDate === 'function') {
+          checkOut = checkOut.toDate().toISOString();
+        }
+        return {
+          id: docSnap.id,
+          ...d,
+          checkInDateTime: checkIn,
+          checkOutDateTime: checkOut,
+        };
+      });
+
+      // Sort by checkInDateTime ascending
+      bookings.sort((a, b) => {
+        const da = new Date(a.checkInDateTime).getTime() || 0;
+        const db = new Date(b.checkInDateTime).getTime() || 0;
+        return da - db;
+      });
+
       callback(bookings);
     },
     (err) => {

@@ -25,20 +25,23 @@ export function subscribeRooms(callback, onError) {
     return mockStore.subscribe('rooms', (data) => {
       // sort by roomNumber naturally
       const sorted = [...data].sort((a, b) =>
-        a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true })
+        (a.roomNumber || '').localeCompare(b.roomNumber || '', undefined, { numeric: true })
       );
       callback(sorted);
     });
   }
 
-  const q = query(collection(db, COLLECTION_NAME), orderBy('roomNumber', 'asc'));
   return onSnapshot(
-    q,
+    collection(db, COLLECTION_NAME),
     (snapshot) => {
       const rooms = snapshot.docs.map((docSnap) => ({
         id: docSnap.id,
         ...docSnap.data(),
       }));
+      // Sort naturally by room number (e.g. 1, 2, 10, 101)
+      rooms.sort((a, b) =>
+        (a.roomNumber || '').localeCompare(b.roomNumber || '', undefined, { numeric: true })
+      );
       callback(rooms);
     },
     (err) => {

@@ -4,7 +4,16 @@ import {getFirestore,collection,doc,addDoc,setDoc,updateDoc,
 
 const STORAGE_KEY_CONFIG = 'room_booking_firebase_config';
 
-// 1. Get Firebase Config from env or localStorage
+export const DEFAULT_FIREBASE_CONFIG = {
+  projectId: 'room-booking-c7abf',
+  apiKey: 'AIzaSyBVo314mJc_0SNAlvsXfwZIYeOEBeP8baQ',
+  authDomain: 'room-booking-c7abf.firebaseapp.com',
+  storageBucket: 'room-booking-c7abf.firebasestorage.app',
+  messagingSenderId: '677871784297',
+  appId: '1:677871784297:web:5aefa8a9ab893443842df8',
+};
+
+// 1. Get Firebase Config from env, localStorage, or project defaults
 export function getStoredFirebaseConfig() {
   const envConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,22 +25,23 @@ export function getStoredFirebaseConfig() {
   };
 
   if (envConfig.projectId && envConfig.apiKey) {
-    return { ...envConfig, source: 'env' };
+    return { ...DEFAULT_FIREBASE_CONFIG, ...envConfig, source: 'env' };
   }
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY_CONFIG) : null;
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed.projectId && parsed.apiKey) {
-        return { ...parsed, source: 'localStorage' };
+        return { ...DEFAULT_FIREBASE_CONFIG, ...parsed, source: 'localStorage' };
       }
     }
   } catch (err) {
     console.error('Error reading saved Firebase config:', err);
   }
 
-  return null;
+  // Always fallback to project default credentials so all connected devices sync with Firestore
+  return { ...DEFAULT_FIREBASE_CONFIG, source: 'default' };
 }
 
 export function saveFirebaseConfig(config) {
