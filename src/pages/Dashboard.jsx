@@ -319,7 +319,7 @@ export default function Dashboard() {
           onCheckOut={handleCheckOutGuest}
           onSetStatus={handleSetRoomStatus}
           onViewBooking={handleSelectBooking}
-          onInitSampleRooms={initializeSampleRooms}
+          onOpenNewRoom={handleOpenAddRoom}
           loading={loadingRooms || loadingBookings}
         />
       </main>

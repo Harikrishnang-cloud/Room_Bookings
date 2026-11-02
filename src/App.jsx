@@ -2,10 +2,11 @@ import React from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Dashboard from './pages/Dashboard';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   return (
-    <>
+    <ErrorBoundary>
       <ToastContainer
         position="top-right"
         autoClose={2400}
@@ -20,6 +21,6 @@ export default function App() {
         limit={3}
       />
       <Dashboard />
-    </>
+    </ErrorBoundary>
   );
 }
