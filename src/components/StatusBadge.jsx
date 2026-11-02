@@ -19,9 +19,9 @@ export default function StatusBadge({ status, size = 'md', className = '' }) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border shadow-sm transition-all ${theme.badgeClass} ${sizeClasses[size] || sizeClasses.md} ${className}`}
+      className={`inline-flex items-center rounded-lg border shadow-sm transition-all ${theme.badgeClass} ${sizeClasses[size] || sizeClasses.md} ${className}`}
     >
-      <span className={`rounded-full shrink-0 ${theme.dotClass} ${dotSizes[size] || dotSizes.md} animate-pulse`} />
+      <span className={`rounded-lg shrink-0 ${theme.dotClass} ${dotSizes[size] || dotSizes.md}`} />
       <span>{theme.label}</span>
     </span>
   );

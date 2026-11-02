@@ -9,7 +9,7 @@ export default function App() {
     <ErrorBoundary>
       <ToastContainer
         position="top-right"
-        autoClose={2400}
+        autoClose={3000}
         hideProgressBar={false}
         newestOnTop
         closeOnClick

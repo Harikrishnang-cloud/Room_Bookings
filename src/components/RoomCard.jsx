@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {DoorClosed,ChevronRight,User,Calendar,Clock,Sparkles,CheckCircle,MoreVertical,LogOut,LogIn,PlusCircle,Eye,} from 'lucide-react';
+import {DoorClosed,ChevronRight,User,Calendar,Clock,Sparkles,Pencil,CheckCircle,MoreVertical,LogOut,LogIn,PlusCircle,Eye,} from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { ROOM_STATUSES, STATUS_THEME, BOOKING_STATUSES } from '../utils/availability';
 import { formatDate, formatTime } from '../utils/dateHelpers';
@@ -136,7 +136,7 @@ export default function RoomCard({
                     }}
                     className="w-full text-left px-4 py-2.5 hover:bg-amber-50 flex items-center gap-2.5 text-amber-700 min-h-[40px] touch-manipulation"
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <Pencil className="w-4 h-4" />
                     <span>Mark as Cleaning</span>
                   </button>
                 ) : (
@@ -183,7 +183,7 @@ export default function RoomCard({
             </div>
           ) : status === ROOM_STATUSES.CLEANING ? (
             <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-2.5 flex items-center gap-2 text-amber-800 text-xs">
-              <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+              <Pencil className="w-4 h-4 text-amber-600 shrink-0" />
               <div className="truncate">
                 <p className="font-semibold truncate">Housekeeping in progress</p>
                 <p className="text-[11px] text-amber-600 truncate">Mark clean once ready</p>
