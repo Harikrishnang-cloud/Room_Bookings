@@ -8,7 +8,7 @@ export default function App() {
     <>
       <ToastContainer
         position="top-right"
-        autoClose={2500}
+        autoClose={2400}
         hideProgressBar={false}
         newestOnTop
         closeOnClick
@@ -16,7 +16,7 @@ export default function App() {
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="colored"
+        theme="dark"
         limit={3}
       />
       <Dashboard />

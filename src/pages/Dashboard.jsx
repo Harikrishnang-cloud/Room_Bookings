@@ -11,60 +11,37 @@ import RoomDetailsModal from '../components/RoomDetailsModal';
 import RoomModal from '../components/RoomModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FirebaseConfigModal from '../components/FirebaseConfigModal';
-
 import { useRooms } from '../hooks/useRooms';
 import { useBookings } from '../hooks/useBookings';
-
-import {computeRoomStatus,ROOM_STATUSES,
-  BOOKING_STATUSES,
-} from '../utils/availability';
-import {
-  addRoom,
-  updateRoom,
-  deleteRoom,
-  setRoomManualStatus,
-} from '../services/roomService';
-import {
-  createBooking,
-  updateBooking,
-  cancelBooking,
-  updateBookingStatus,
-} from '../services/bookingService';
+import { computeRoomStatus, ROOM_STATUSES, BOOKING_STATUSES, } from '../utils/availability';
+import { addRoom, updateRoom, deleteRoom, setRoomManualStatus, } from '../services/roomService';
+import { createBooking, updateBooking, cancelBooking, updateBookingStatus, } from '../services/bookingService';
 
 export default function Dashboard() {
   const { rooms, loading: loadingRooms } = useRooms();
   const { bookings, loading: loadingBookings } = useBookings();
-
-  // State
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
-
-  // Modals state
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState(null);
   const [preselectedRoomId, setPreselectedRoomId] = useState(null);
-
   const [isBookingDetailsOpen, setIsBookingDetailsOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
-
   const [isRoomDetailsOpen, setIsRoomDetailsOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
-
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
-
   const [isFirebaseConfigOpen, setIsFirebaseConfigOpen] = useState(false);
-
   const [confirmConfig, setConfirmConfig] = useState({
     isOpen: false,
     title: '',
     message: '',
     variant: 'danger',
     requireReason: false,
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   // Calculate real-time status for all rooms
@@ -342,7 +319,7 @@ export default function Dashboard() {
           onCheckOut={handleCheckOutGuest}
           onSetStatus={handleSetRoomStatus}
           onViewBooking={handleSelectBooking}
-          onOpenNewRoom={handleOpenAddRoom}
+          onInitSampleRooms={initializeSampleRooms}
           loading={loadingRooms || loadingBookings}
         />
       </main>
