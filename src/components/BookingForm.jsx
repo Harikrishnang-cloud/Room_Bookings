@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { X, User, Phone, DoorClosed, Clock, AlertTriangle } from 'lucide-react';
+import { X, User, Phone, DoorClosed, Clock, CreditCard, AlertTriangle, ArrowRight } from 'lucide-react';
 import { validateBookingForm, checkBookingConflict } from '../utils/bookingValidation';
 import { BOOKING_STATUSES, ROOM_STATUSES, computeRoomStatus } from '../utils/availability';
+import { toDateTimeLocalValue, formatTime, formatDate } from '../utils/dateHelpers';
 
 function getDurationHours(option, customVal) {
   if (option === '3hr') return 3;
@@ -38,17 +39,22 @@ export default function BookingForm({
 }) {
   const isEditing = Boolean(initialData && initialData.id);
 
-  // Form State: name, phone number, time duration (3hr, 6hr, 1 day, custom), and assigned room
+  // Form State: name, phone number, duration, payment method, room, and start time
   const [formData, setFormData] = useState({
     guestName: '',
     mobileNumber: '',
     roomId: '',
     durationOption: '1day',
     customHours: '',
+    paymentMethod: 'Cash',
+    paymentMethodOther: '',
+    isCustomCheckIn: false,
+    customCheckInTime: toDateTimeLocalValue(new Date()),
   });
 
   const [errors, setErrors] = useState({});
   const [conflictWarning, setConflictWarning] = useState(null);
+  const [conflictDetails, setConflictDetails] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initialize or reset form
@@ -71,12 +77,19 @@ export default function BookingForm({
           }
         }
 
+        const rawPayment = initialData.paymentMethod || 'Cash';
+        const isStandardMethod = rawPayment === 'Cash' || rawPayment === 'Gpay';
+
         setFormData({
           guestName: initialData.guestName || '',
           mobileNumber: initialData.mobileNumber || '',
           roomId: initialData.roomId || '',
           durationOption: initialDurationOption || '1day',
           customHours: initialCustomHours,
+          paymentMethod: isStandardMethod ? rawPayment : 'Other',
+          paymentMethodOther: isStandardMethod ? '' : (rawPayment === 'Other' ? (initialData.paymentMethodOther || '') : rawPayment),
+          isCustomCheckIn: true,
+          customCheckInTime: toDateTimeLocalValue(new Date(initialData.checkInDateTime)),
         });
       } else {
         // Pick preselected room or first available room, or first room
@@ -95,29 +108,45 @@ export default function BookingForm({
           roomId: defaultRoomId || '',
           durationOption: '1day',
           customHours: '',
+          paymentMethod: 'Cash',
+          paymentMethodOther: '',
+          isCustomCheckIn: false,
+          customCheckInTime: toDateTimeLocalValue(new Date()),
         });
       }
       setErrors({});
       setConflictWarning(null);
+      setConflictDetails(null);
       setIsSubmitting(false);
     }
   }, [isOpen, initialData, preselectedRoomId, rooms, bookings]);
+
+  // Computed check-in and check-out dates
+  const hours = getDurationHours(formData.durationOption, formData.customHours) || 24;
+  const activeCheckIn = formData.isCustomCheckIn && formData.customCheckInTime
+    ? new Date(formData.customCheckInTime)
+    : (initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : new Date());
+  const activeCheckOut = new Date(activeCheckIn.getTime() + hours * 60 * 60 * 1000);
 
   // Check conflict for selected room and computed duration
   useEffect(() => {
     if (!formData.roomId) {
       setConflictWarning(null);
+      setConflictDetails(null);
       return;
     }
 
-    const hours = getDurationHours(formData.durationOption, formData.customHours);
-    if (!hours || hours <= 0) {
+    const h = getDurationHours(formData.durationOption, formData.customHours);
+    if (!h || h <= 0) {
       setConflictWarning(null);
+      setConflictDetails(null);
       return;
     }
 
-    const checkInDateTime = initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : new Date();
-    const checkOutDateTime = new Date(checkInDateTime.getTime() + hours * 60 * 60 * 1000);
+    const checkInDateTime = formData.isCustomCheckIn && formData.customCheckInTime
+      ? new Date(formData.customCheckInTime)
+      : (initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : new Date());
+    const checkOutDateTime = new Date(checkInDateTime.getTime() + h * 60 * 60 * 1000);
 
     const result = checkBookingConflict({
       roomId: formData.roomId,
@@ -129,10 +158,20 @@ export default function BookingForm({
 
     if (result.hasConflict) {
       setConflictWarning(result.message);
+      setConflictDetails(result);
     } else {
       setConflictWarning(null);
+      setConflictDetails(null);
     }
-  }, [formData.roomId, formData.durationOption, formData.customHours, bookings, initialData]);
+  }, [
+    formData.roomId,
+    formData.durationOption,
+    formData.customHours,
+    formData.isCustomCheckIn,
+    formData.customCheckInTime,
+    bookings,
+    initialData,
+  ]);
 
   if (!isOpen) return null;
 
@@ -155,11 +194,13 @@ export default function BookingForm({
       }
     }
 
-    const hours = getDurationHours(formData.durationOption, formData.customHours) || 24;
-    const now = new Date();
-    const checkIn = initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : now;
-    const checkOut = new Date(checkIn.getTime() + hours * 60 * 60 * 1000);
+    const checkIn = activeCheckIn;
+    const checkOut = activeCheckOut;
     const durationLabel = getDurationLabel(formData.durationOption, formData.customHours);
+    const effectivePaymentMethod =
+      formData.paymentMethod === 'Other' && formData.paymentMethodOther.trim()
+        ? formData.paymentMethodOther.trim()
+        : formData.paymentMethod;
 
     const submissionPayload = {
       guestName: formData.guestName,
@@ -168,6 +209,7 @@ export default function BookingForm({
       durationOption: formData.durationOption,
       durationHours: hours,
       durationLabel,
+      paymentMethod: effectivePaymentMethod,
       checkInDateTime: checkIn,
       checkOutDateTime: checkOut,
       numberOfGuests: initialData?.numberOfGuests || 1,
@@ -238,13 +280,54 @@ export default function BookingForm({
             </div>
           )}
 
-          {/* Conflict Alert */}
+          {/* Conflict Alert with Quick Resolution */}
           {conflictWarning && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-start gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold">Room Already Booked</p>
-                <p>{conflictWarning}</p>
+            <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-300 text-amber-900 text-xs font-medium space-y-2.5">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-amber-950">Room Already Booked For This Time</p>
+                  <p className="mt-0.5 text-amber-800 leading-relaxed">{conflictWarning}</p>
+                </div>
+              </div>
+
+              {/* Quick Actions to solve the conflict */}
+              <div className="flex items-center gap-2 pt-2 border-t border-amber-200/80 flex-wrap">
+                {conflictDetails?.availableAfter && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        isCustomCheckIn: true,
+                        customCheckInTime: toDateTimeLocalValue(conflictDetails.availableAfter),
+                      }));
+                    }}
+                    className="px-2.5 py-1.5 text-[11px] font-bold bg-amber-200 hover:bg-amber-300 text-amber-950 rounded-lg transition-colors flex items-center gap-1 min-h-[30px]"
+                  >
+                    <span>Schedule from {formatTime(conflictDetails.availableAfter)}</span>
+                  </button>
+                )}
+                {rooms.some(
+                  (r) =>
+                    r.id !== formData.roomId &&
+                    computeRoomStatus(r, bookings, activeCheckIn).status === ROOM_STATUSES.AVAILABLE
+                ) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const freeRoom = rooms.find(
+                        (r) =>
+                          r.id !== formData.roomId &&
+                          computeRoomStatus(r, bookings, activeCheckIn).status === ROOM_STATUSES.AVAILABLE
+                      );
+                      if (freeRoom) handleChange('roomId', freeRoom.id);
+                    }}
+                    className="px-2.5 py-1.5 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors min-h-[30px]"
+                  >
+                    Switch to available room
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -366,9 +449,135 @@ export default function BookingForm({
                 )}
               </div>
             )}
+
+            {/* Live Computed Time Period Preview */}
+            <div className="mt-2.5 p-3 bg-slate-50/90 rounded-2xl border border-slate-200/90 text-xs space-y-2">
+              <div className="flex items-center justify-between font-semibold text-slate-700">
+                <span className="flex items-center gap-1.5 text-slate-600">
+                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                  Time Period
+                </span>
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  {getDurationLabel(formData.durationOption, formData.customHours)}
+                </span>
+              </div>
+
+              {/* Check-In -> Check-Out Display */}
+              <div className="grid grid-cols-2 gap-2 p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-2xs">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase">Check-In</span>
+                  <span className="font-bold text-slate-900 text-xs sm:text-sm block">
+                    {formatTime(activeCheckIn)}
+                  </span>
+                  <span className="text-[10px] text-slate-500 block truncate">
+                    {formatDate(activeCheckIn, 'dd MMM yyyy')}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold text-emerald-600 block uppercase">Check-Out</span>
+                  <span className="font-bold text-emerald-800 text-xs sm:text-sm block">
+                    {formatTime(activeCheckOut)}
+                  </span>
+                  <span className="text-[10px] text-slate-500 block truncate">
+                    {formatDate(activeCheckOut, 'dd MMM yyyy')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Start Time Option: Start Now vs Schedule for specific time */}
+              <div className="pt-1 flex items-center justify-between flex-wrap gap-2 text-xs">
+                <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-600 select-none">
+                  <input
+                    type="checkbox"
+                    checked={formData.isCustomCheckIn}
+                    onChange={(e) => handleChange('isCustomCheckIn', e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
+                  />
+                  <span>Schedule specific start time</span>
+                </label>
+                {!formData.isCustomCheckIn && (
+                  <span className="text-[11px] text-slate-400 font-medium">Starting now</span>
+                )}
+              </div>
+
+              {formData.isCustomCheckIn && (
+                <div className="mt-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    Check-in Date & Time:
+                  </label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={formData.customCheckInTime}
+                    onChange={(e) => handleChange('customCheckInTime', e.target.value)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 min-h-[40px]"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* 4. Assigned Room */}
+          {/* 4. Payment Method (Cash, Gpay, Other) */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <CreditCard className="w-3.5 h-3.5 text-slate-500" />
+                Payment Method <span className="text-rose-500">*</span>
+              </span>
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                {formData.paymentMethod === 'Other' && formData.paymentMethodOther.trim()
+                  ? formData.paymentMethodOther.trim()
+                  : formData.paymentMethod}
+              </span>
+            </label>
+
+            {/* Checkbox chips: Cash, Gpay, Other */}
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'Cash', label: 'Cash' },
+                { id: 'Gpay', label: 'Gpay' },
+                { id: 'Other', label: 'Other' },
+              ].map((opt) => {
+                const isSelected = formData.paymentMethod === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleChange('paymentMethod', opt.id)}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl border text-xs font-semibold cursor-pointer select-none transition-all touch-manipulation min-h-[44px] ${
+                      isSelected
+                        ? 'border-emerald-600 bg-emerald-50 text-emerald-800 shadow-xs ring-1 ring-emerald-500 font-bold'
+                        : 'border-slate-200 bg-slate-50/70 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      readOnly
+                      className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer pointer-events-none"
+                    />
+                    <span className="truncate">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom Input Box if 'Other' is selected */}
+            {formData.paymentMethod === 'Other' && (
+              <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                <input
+                  type="text"
+                  placeholder="Specify payment method (e.g. PhonePe, Card)"
+                  value={formData.paymentMethodOther}
+                  onChange={(e) => handleChange('paymentMethodOther', e.target.value)}
+                  className="w-full px-3 py-2.5 text-base sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 min-h-[44px]"
+                  autoFocus
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 5. Assigned Room */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               Assigned Room <span className="text-rose-500">*</span>
@@ -385,11 +594,19 @@ export default function BookingForm({
               >
                 <option value="">Select a room...</option>
                 {rooms.map((r) => {
-                  const roomStatus = computeRoomStatus(r, bookings, new Date()).status;
-                  const isAvailable = roomStatus === ROOM_STATUSES.AVAILABLE;
+                  const statusInfo = computeRoomStatus(r, bookings, activeCheckIn);
+                  const active = statusInfo.activeBooking;
+                  let availText = 'Available Now';
+                  if (active) {
+                    availText = `Occupied until ${formatTime(active.checkOutDateTime)} (Free after)`;
+                  } else if (statusInfo.upcomingBooking) {
+                    availText = `Free until ${formatTime(statusInfo.upcomingBooking.checkInDateTime)}`;
+                  } else if (statusInfo.status === ROOM_STATUSES.CLEANING) {
+                    availText = 'Cleaning in progress';
+                  }
                   return (
                     <option key={r.id} value={r.id}>
-                      Room {r.roomNumber} {r.roomName ? `• ${r.roomName}` : ''} {!isAvailable ? `(${roomStatus})` : '• Available'}
+                      Room {r.roomNumber} {r.roomName ? `• ${r.roomName}` : ''} • {availText}
                     </option>
                   );
                 })}

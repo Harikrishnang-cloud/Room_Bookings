@@ -1,4 +1,4 @@
-import { toDate } from './dateHelpers';
+import { toDate, formatTime, formatDate } from './dateHelpers';
 import { doIntervalsOverlap, BOOKING_STATUSES } from './availability';
 
 /**
@@ -97,10 +97,16 @@ export function checkBookingConflict({
   });
 
   if (conflicting) {
+    const bCheckIn = toDate(conflicting.checkInDateTime);
+    const bCheckOut = toDate(conflicting.checkOutDateTime);
+    const timeRangeStr = `${formatTime(bCheckIn)} – ${formatTime(bCheckOut)}`;
+    const freeAfterStr = formatTime(bCheckOut);
+
     return {
       hasConflict: true,
       conflictingBooking: conflicting,
-      message: `Room is already booked for ${conflicting.guestName || 'another guest'} during this timeframe.`,
+      availableAfter: bCheckOut,
+      message: `Room is currently booked for ${conflicting.guestName || 'another guest'} (${timeRangeStr}). It will be available after ${freeAfterStr}.`,
     };
   }
 

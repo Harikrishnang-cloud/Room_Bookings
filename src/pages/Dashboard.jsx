@@ -93,23 +93,71 @@ export default function Dashboard() {
         if (statusData.status !== filterStatus) return false;
       }
 
-      // Search query (roomNumber, guestName, mobileNumber)
+      // Search query (roomNumber, guestName, mobileNumber, roomName, status, duration)
       if (searchQuery && searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchesRoomNumber = room.roomNumber.toLowerCase().includes(q);
-        const matchesRoomName = room.roomName?.toLowerCase().includes(q);
-        const activeGuest = statusData.activeBooking?.guestName?.toLowerCase().includes(q);
-        const activePhone = statusData.activeBooking?.mobileNumber?.toLowerCase().includes(q);
+        const rawQ = searchQuery.toLowerCase().trim();
+        // Remove "room " or "rm " prefix if user searches e.g. "Room 101" or "rm 101"
+        const cleanQ = rawQ.replace(/^(room|rm)\s+/i, '');
 
-        // Also check any future bookings for this room
-        const hasMatchingBooking = bookings.some(
-          (b) =>
-            b.roomId === room.id &&
-            b.bookingStatus !== BOOKING_STATUSES.CANCELLED &&
-            (b.guestName.toLowerCase().includes(q) || b.mobileNumber.toLowerCase().includes(q))
+        // Tokenize query by whitespace for multi-term search (e.g. "101 john" or "deluxe available")
+        const tokens = rawQ.split(/\s+/).filter(Boolean);
+
+        const roomNumberStr = String(room.roomNumber || '').toLowerCase();
+        const roomNameStr = String(room.roomName || '').toLowerCase();
+        const statusStr = String(statusData.status || '').toLowerCase();
+
+        const activeGuest = String(statusData.activeBooking?.guestName || '').toLowerCase();
+        const activePhoneRaw = String(statusData.activeBooking?.mobileNumber || '').toLowerCase();
+        const activePhoneDigits = activePhoneRaw.replace(/[^0-9]/g, '');
+        const activeDuration = String(statusData.activeBooking?.durationLabel || '').toLowerCase();
+        const activePayment = String(statusData.activeBooking?.paymentMethod || '').toLowerCase();
+
+        // Check bookings for this room
+        const roomBookings = bookings.filter(
+          (b) => b.roomId === room.id && b.bookingStatus !== BOOKING_STATUSES.CANCELLED
         );
+        const bookingGuests = roomBookings.map((b) => String(b.guestName || '').toLowerCase()).join(' ');
+        const bookingPhones = roomBookings.map((b) => String(b.mobileNumber || '').toLowerCase()).join(' ');
+        const bookingPhonesDigits = bookingPhones.replace(/[^0-9]/g, '');
+        const bookingPayments = roomBookings.map((b) => String(b.paymentMethod || '').toLowerCase()).join(' ');
 
-        if (!matchesRoomNumber && !matchesRoomName && !activeGuest && !activePhone && !hasMatchingBooking) {
+        const allSearchable = [
+          `room ${roomNumberStr}`,
+          `rm ${roomNumberStr}`,
+          roomNumberStr,
+          roomNameStr,
+          statusStr,
+          activeGuest,
+          activePhoneRaw,
+          activePhoneDigits,
+          activeDuration,
+          activePayment,
+          bookingGuests,
+          bookingPhones,
+          bookingPhonesDigits,
+          bookingPayments,
+        ].join(' ');
+
+        // Direct match check on clean query
+        const directMatch =
+          roomNumberStr.includes(cleanQ) ||
+          roomNameStr.includes(cleanQ) ||
+          activeGuest.includes(cleanQ) ||
+          activePhoneRaw.includes(cleanQ) ||
+          (cleanQ.replace(/[^0-9]/g, '').length >= 3 &&
+            (activePhoneDigits.includes(cleanQ.replace(/[^0-9]/g, '')) ||
+              bookingPhonesDigits.includes(cleanQ.replace(/[^0-9]/g, ''))));
+
+        if (directMatch) return true;
+
+        // Check if all tokens match anywhere in searchable text
+        const allTokensMatch = tokens.every((token) => {
+          const cleanToken = token.replace(/^(room|rm)$/i, '');
+          if (!cleanToken) return true;
+          return allSearchable.includes(token) || allSearchable.includes(cleanToken);
+        });
+
+        if (!allTokensMatch) {
           return false;
         }
       }

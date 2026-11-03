@@ -1,17 +1,5 @@
 import React from 'react';
-import {
-  X,
-  User,
-  Phone,
-  DoorClosed,
-  LogIn,
-  LogOut,
-  Edit2,
-  Trash2,
-  Users,
-  FileText,
-  Clock,
-} from 'lucide-react';
+import {X,User,Phone,DoorClosed,LogIn,LogOut,Edit2,Trash2,Users,FileText,Clock,CreditCard,} from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { formatDateTime, formatDate, formatTime } from '../utils/dateHelpers';
 import { BOOKING_STATUSES, ROOM_STATUSES } from '../utils/availability';
@@ -132,6 +120,18 @@ export default function BookingDetailsModal({
             </div>
           </div>
 
+          {/* Payment Method */}
+          {booking.paymentMethod && (
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                Payment Method
+              </span>
+              <span className="text-xs font-bold text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                {booking.paymentMethod}
+              </span>
+            </div>
+          )}
 
           {/* Notes */}
           {booking.notes && (
@@ -163,7 +163,7 @@ export default function BookingDetailsModal({
               className="px-3.5 py-2.5 text-xs font-semibold rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center gap-1.5 min-h-[42px] touch-manipulation"
             >
               <Trash2 className="w-4 h-4" />
-              <span>Cancel</span>
+              <span>Cancel Booking</span>
             </button>
           )}
 
@@ -178,7 +178,7 @@ export default function BookingDetailsModal({
                 className="px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors flex items-center gap-1.5 min-h-[42px] touch-manipulation"
               >
                 <Edit2 className="w-4 h-4" />
-                <span>Edit</span>
+                <span>Edit Booking</span>
               </button>
             )}
 

@@ -1,19 +1,5 @@
-import {
-  db,
-  isFirebaseConfigured,
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  getDoc,
-  serverTimestamp,
-  onSnapshot,
-  query,
-  orderBy,
-  runTransaction,
-} from './firebase';
+import {db,isFirebaseConfigured,collection,doc,addDoc,updateDoc,deleteDoc,
+  getDocs,getDoc,serverTimestamp,onSnapshot,query,orderBy,runTransaction,} from './firebase';
 import { mockStore } from './mockDataStore';
 import { checkBookingConflict, validateBookingForm } from '../utils/bookingValidation';
 import { BOOKING_STATUSES } from '../utils/availability';
@@ -93,6 +79,7 @@ export async function createBooking(data, roomNumber = '') {
     durationOption: data.durationOption || '1day',
     durationHours: Number(data.durationHours) || 24,
     durationLabel: data.durationLabel || '1 Day',
+    paymentMethod: data.paymentMethod || 'Cash',
     checkInDateTime: typeof data.checkInDateTime === 'string' ? data.checkInDateTime : data.checkInDateTime.toISOString(),
     checkOutDateTime: typeof data.checkOutDateTime === 'string' ? data.checkOutDateTime : data.checkOutDateTime.toISOString(),
     numberOfGuests: Number(data.numberOfGuests) || 1,

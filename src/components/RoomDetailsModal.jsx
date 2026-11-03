@@ -277,7 +277,7 @@ export default function RoomDetailsModal({
               className="px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-700 hover:bg-slate-200 border border-slate-300 transition-colors flex items-center gap-1.5 min-h-[42px] touch-manipulation"
             >
               <Edit2 className="w-4 h-4" />
-              <span>Edit</span>
+              <span>Edit Room</span>
             </button>
 
             <button
@@ -289,7 +289,7 @@ export default function RoomDetailsModal({
               className="px-3.5 py-2.5 text-xs font-semibold rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center gap-1.5 min-h-[42px] touch-manipulation"
             >
               <Trash2 className="w-4 h-4" />
-              <span>Delete</span>
+              <span>Delete Room</span>
             </button>
           </div>
 

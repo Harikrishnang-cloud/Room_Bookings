@@ -51,6 +51,14 @@ export function formatDateTime(val) {
 }
 
 /**
+ * Format for HTML datetime-local input: "YYYY-MM-DDTHH:mm"
+ */
+export function toDateTimeLocalValue(val) {
+  const d = toDate(val) || new Date();
+  return format(d, "yyyy-MM-dd'T'HH:mm");
+}
+
+/**
  * Format for HTML date input: "YYYY-MM-DD"
  */
 export function toDateInputValue(val) {

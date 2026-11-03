@@ -3,22 +3,7 @@ import { Search, X, Layers, Plus } from 'lucide-react';
 import RoomCard from './RoomCard';
 import { ROOM_STATUSES } from '../utils/availability';
 
-export default function RoomGrid({
-  rooms,
-  roomStatusMap,
-  filterStatus,
-  onSelectFilter,
-  searchQuery,
-  onSearchChange,
-  onClickRoom,
-  onBookRoom,
-  onCheckIn,
-  onCheckOut,
-  onSetStatus,
-  onViewBooking,
-  onOpenNewRoom,
-  loading = false,
-}) {
+export default function RoomGrid({rooms,roomStatusMap,filterStatus,onSelectFilter,searchQuery,onSearchChange,onClickRoom,onBookRoom,onCheckIn,onCheckOut,onSetStatus,onViewBooking,onOpenNewRoom,loading = false,}) {
   const filterOptions = [
     { label: 'All Rooms', value: 'ALL' },
     { label: 'Available', value: ROOM_STATUSES.AVAILABLE },
@@ -52,26 +37,37 @@ export default function RoomGrid({
           })}
         </div>
 
-        {/* Search Input */}
-        <div className="relative w-full md:w-auto md:min-w-[280px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* Search Input with Proper Search UX */}
+        <div className="relative w-full md:w-72 lg:w-80 group">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none group-focus-within:text-emerald-600 transition-colors" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search room #, guest, phone..."
-            className="w-full pl-9 pr-9 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400 min-h-[42px]"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                onSearchChange('');
+              }
+            }}
+            placeholder="Search room, guest, phone, status..."
+            className="w-full pl-9 pr-16 py-2.5 text-xs sm:text-sm bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200 focus:border-emerald-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-slate-400 min-h-[42px]"
           />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => onSearchChange('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600 rounded-md min-w-[32px] min-h-[32px] flex items-center justify-center touch-manipulation"
-              aria-label="Clear search"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+          {searchQuery ? (
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <span className="text-[10px] font-semibold text-slate-500 bg-slate-200/80 px-1.5 py-0.5 rounded">
+                {rooms.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => onSearchChange('')}
+                className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-md transition-colors min-w-[28px] min-h-[28px] flex items-center justify-center touch-manipulation"
+                aria-label="Clear search"
+                title="Clear search (Esc)"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 
