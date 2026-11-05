@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { X, User, Phone, DoorClosed, Clock, CreditCard, AlertTriangle, ArrowRight } from 'lucide-react';
 import { validateBookingForm, checkBookingConflict } from '../utils/bookingValidation';
 import { BOOKING_STATUSES, ROOM_STATUSES, computeRoomStatus } from '../utils/availability';
-import { toDateTimeLocalValue, formatTime, formatDate } from '../utils/dateHelpers';
+import { toDateTimeLocalValue, formatTime, formatDate, toTimeInputValue } from '../utils/dateHelpers';
 
 function getDurationHours(option, customVal, customUnit = 'days') {
   if (option === '3hr') return 3;
@@ -46,7 +46,7 @@ export default function BookingForm({
 }) {
   const isEditing = Boolean(initialData && initialData.id);
 
-  // Form State: name, phone number, duration, payment method, room, and start time
+  // Form State: name, phone number, duration, checkout time, payment method, room, and start time
   const [formData, setFormData] = useState({
     guestName: '',
     mobileNumber: '',
@@ -54,6 +54,8 @@ export default function BookingForm({
     durationOption: '1day',
     customHours: '2',
     customUnit: 'days', // 'days' | 'hours'
+    checkOutTimeMode: '11:00', // '11:00' | '12:00' | 'same' | 'custom'
+    checkOutTime: '11:00', // 'HH:mm' format for departure day
     paymentMethod: 'Cash',
     paymentMethodOther: '',
     isCustomCheckIn: false,
@@ -103,6 +105,24 @@ export default function BookingForm({
         const rawPayment = initialData.paymentMethod || 'Cash';
         const isStandardMethod = rawPayment === 'Cash' || rawPayment === 'Gpay';
 
+        let initialCheckOutTime = '11:00';
+        let initialCheckOutTimeMode = '11:00';
+        if (initialData.checkOutDateTime) {
+          initialCheckOutTime = toTimeInputValue(initialData.checkOutDateTime);
+          if (initialCheckOutTime === '11:00') {
+            initialCheckOutTimeMode = '11:00';
+          } else if (initialCheckOutTime === '12:00') {
+            initialCheckOutTimeMode = '12:00';
+          } else if (
+            initialData.checkInDateTime &&
+            initialCheckOutTime === toTimeInputValue(initialData.checkInDateTime)
+          ) {
+            initialCheckOutTimeMode = 'same';
+          } else {
+            initialCheckOutTimeMode = 'custom';
+          }
+        }
+
         setFormData({
           guestName: initialData.guestName || '',
           mobileNumber: initialData.mobileNumber || '',
@@ -110,6 +130,8 @@ export default function BookingForm({
           durationOption: initialDurationOption || '1day',
           customHours: initialCustomHours,
           customUnit: initialCustomUnit,
+          checkOutTimeMode: initialCheckOutTimeMode,
+          checkOutTime: initialCheckOutTime,
           paymentMethod: isStandardMethod ? rawPayment : 'Other',
           paymentMethodOther: isStandardMethod ? '' : (rawPayment === 'Other' ? (initialData.paymentMethodOther || '') : rawPayment),
           isCustomCheckIn: true,
@@ -133,6 +155,8 @@ export default function BookingForm({
           durationOption: '1day',
           customHours: '2',
           customUnit: 'days',
+          checkOutTimeMode: '11:00',
+          checkOutTime: '11:00',
           paymentMethod: 'Cash',
           paymentMethodOther: '',
           isCustomCheckIn: false,
@@ -146,12 +170,46 @@ export default function BookingForm({
     }
   }, [isOpen, initialData, preselectedRoomId, rooms, bookings]);
 
-  // Computed check-in and check-out dates
-  const hours = getDurationHours(formData.durationOption, formData.customHours, formData.customUnit) || 24;
+  // Determine whether current duration is Day-based or Hour-based
+  const isDayBooking =
+    formData.durationOption === '1day' ||
+    (formData.durationOption === 'custom' && formData.customUnit === 'days');
+
+  // Computed check-in date
   const activeCheckIn = formData.isCustomCheckIn && formData.customCheckInTime
     ? new Date(formData.customCheckInTime)
     : (initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : new Date());
-  const activeCheckOut = new Date(activeCheckIn.getTime() + hours * 60 * 60 * 1000);
+
+  // Computed check-out date:
+  // For Day bookings (1 day or custom N days), check-out is calculated on the departure day with the specified check-out time.
+  // For Hourly bookings (3hr, 6hr, custom hours), check-out is check-in + N hours.
+  let activeCheckOut;
+  if (isDayBooking) {
+    const days = formData.durationOption === '1day'
+      ? 1
+      : Math.max(1, parseFloat(formData.customHours) || 1);
+    const departureDate = new Date(activeCheckIn);
+    departureDate.setDate(departureDate.getDate() + days);
+
+    if (formData.checkOutTimeMode === 'same') {
+      activeCheckOut = departureDate;
+    } else {
+      const [hStr, mStr] = (formData.checkOutTime || '11:00').split(':');
+      departureDate.setHours(parseInt(hStr, 10) || 11, parseInt(mStr, 10) || 0, 0, 0);
+      if (departureDate.getTime() <= activeCheckIn.getTime()) {
+        departureDate.setDate(departureDate.getDate() + 1);
+      }
+      activeCheckOut = departureDate;
+    }
+  } else {
+    const hours = getDurationHours(formData.durationOption, formData.customHours, formData.customUnit) || 3;
+    activeCheckOut = new Date(activeCheckIn.getTime() + hours * 60 * 60 * 1000);
+  }
+
+  const effectiveDurationHours = Math.max(
+    1,
+    Math.round((activeCheckOut.getTime() - activeCheckIn.getTime()) / (1000 * 60 * 60))
+  );
 
   // Check conflict for selected room and computed duration
   useEffect(() => {
@@ -161,22 +219,10 @@ export default function BookingForm({
       return;
     }
 
-    const h = getDurationHours(formData.durationOption, formData.customHours, formData.customUnit);
-    if (!h || h <= 0) {
-      setConflictWarning(null);
-      setConflictDetails(null);
-      return;
-    }
-
-    const checkInDateTime = formData.isCustomCheckIn && formData.customCheckInTime
-      ? new Date(formData.customCheckInTime)
-      : (initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : new Date());
-    const checkOutDateTime = new Date(checkInDateTime.getTime() + h * 60 * 60 * 1000);
-
     const result = checkBookingConflict({
       roomId: formData.roomId,
-      checkInDateTime,
-      checkOutDateTime,
+      checkInDateTime: activeCheckIn,
+      checkOutDateTime: activeCheckOut,
       excludeBookingId: initialData?.id || null,
       existingBookings: bookings,
     });
@@ -193,6 +239,8 @@ export default function BookingForm({
     formData.durationOption,
     formData.customHours,
     formData.customUnit,
+    formData.checkOutTimeMode,
+    formData.checkOutTime,
     formData.isCustomCheckIn,
     formData.customCheckInTime,
     bookings,
@@ -233,7 +281,7 @@ export default function BookingForm({
       mobileNumber: formData.mobileNumber,
       roomId: formData.roomId,
       durationOption: formData.durationOption,
-      durationHours: hours,
+      durationHours: effectiveDurationHours,
       durationLabel,
       paymentMethod: effectivePaymentMethod,
       checkInDateTime: checkIn,
@@ -589,6 +637,97 @@ export default function BookingForm({
                   </span>
                 </div>
               </div>
+
+              {/* Check-out Time on Departure Day (for Day Bookings: 1 Day or Custom Days) */}
+              {isDayBooking && (
+                <div className="p-2.5 bg-white rounded-xl border border-slate-200/80 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-700">
+                      Check-out Time on Departure Day:
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                      {formatTime(activeCheckOut)} ({formatDate(activeCheckOut, 'dd MMM')})
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          checkOutTimeMode: '11:00',
+                          checkOutTime: '11:00',
+                        }));
+                      }}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all ${
+                        formData.checkOutTimeMode === '11:00'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      11:00 AM (Std)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          checkOutTimeMode: '12:00',
+                          checkOutTime: '12:00',
+                        }));
+                      }}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all ${
+                        formData.checkOutTimeMode === '12:00'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      12:00 PM (Noon)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          checkOutTimeMode: 'same',
+                          checkOutTime: toTimeInputValue(activeCheckIn),
+                        }));
+                      }}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all ${
+                        formData.checkOutTimeMode === 'same'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      Same ({formatTime(activeCheckIn)})
+                    </button>
+
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <span className="text-[10px] text-slate-400 font-medium">Custom:</span>
+                      <input
+                        type="time"
+                        value={formData.checkOutTime}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData((prev) => ({
+                            ...prev,
+                            checkOutTimeMode: 'custom',
+                            checkOutTime: val,
+                          }));
+                        }}
+                        className={`px-2 py-1 text-xs bg-slate-50 border rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold min-h-[30px] ${
+                          formData.checkOutTimeMode === 'custom'
+                            ? 'border-emerald-500 text-emerald-800 bg-emerald-50/50 ring-1 ring-emerald-500'
+                            : 'border-slate-300 text-slate-700'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Start Time Option: Start Now vs Schedule for specific time */}
               <div className="pt-1 flex items-center justify-between flex-wrap gap-2 text-xs">
