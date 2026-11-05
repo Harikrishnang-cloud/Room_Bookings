@@ -96,26 +96,19 @@ export default function Dashboard() {
       // Search query (roomNumber, guestName, mobileNumber, roomName, status, duration)
       if (searchQuery && searchQuery.trim()) {
         const rawQ = searchQuery.toLowerCase().trim();
-        // Remove "room " or "rm " prefix if user searches e.g. "Room 101" or "rm 101"
         const cleanQ = rawQ.replace(/^(room|rm)\s+/i, '');
-
-        // Tokenize query by whitespace for multi-term search (e.g. "101 john" or "deluxe available")
         const tokens = rawQ.split(/\s+/).filter(Boolean);
-
         const roomNumberStr = String(room.roomNumber || '').toLowerCase();
         const roomNameStr = String(room.roomName || '').toLowerCase();
+        const roomDescriptionStr = String(room.description || '').toLowerCase();
         const statusStr = String(statusData.status || '').toLowerCase();
-
         const activeGuest = String(statusData.activeBooking?.guestName || '').toLowerCase();
         const activePhoneRaw = String(statusData.activeBooking?.mobileNumber || '').toLowerCase();
         const activePhoneDigits = activePhoneRaw.replace(/[^0-9]/g, '');
         const activeDuration = String(statusData.activeBooking?.durationLabel || '').toLowerCase();
         const activePayment = String(statusData.activeBooking?.paymentMethod || '').toLowerCase();
-
-        // Check bookings for this room
         const roomBookings = bookings.filter(
-          (b) => b.roomId === room.id && b.bookingStatus !== BOOKING_STATUSES.CANCELLED
-        );
+          (b) => b.roomId === room.id && b.bookingStatus !== BOOKING_STATUSES.CANCELLED);
         const bookingGuests = roomBookings.map((b) => String(b.guestName || '').toLowerCase()).join(' ');
         const bookingPhones = roomBookings.map((b) => String(b.mobileNumber || '').toLowerCase()).join(' ');
         const bookingPhonesDigits = bookingPhones.replace(/[^0-9]/g, '');
@@ -126,6 +119,7 @@ export default function Dashboard() {
           `rm ${roomNumberStr}`,
           roomNumberStr,
           roomNameStr,
+          roomDescriptionStr,
           statusStr,
           activeGuest,
           activePhoneRaw,
@@ -142,6 +136,7 @@ export default function Dashboard() {
         const directMatch =
           roomNumberStr.includes(cleanQ) ||
           roomNameStr.includes(cleanQ) ||
+          roomDescriptionStr.includes(cleanQ) ||
           activeGuest.includes(cleanQ) ||
           activePhoneRaw.includes(cleanQ) ||
           (cleanQ.replace(/[^0-9]/g, '').length >= 3 &&
@@ -346,22 +341,8 @@ export default function Dashboard() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6 space-y-4 sm:space-y-6 pb-24 sm:pb-8">
-        {/* 1. Summary Cards */}
-        <SummaryCards
-          counts={counts}
-          activeFilter={filterStatus}
-          onSelectFilter={setFilterStatus}
-        />
-
-        {/* 2. Daily Operations Section */}
-        <DailyActivity
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-          rooms={rooms}
-          bookings={bookings}
-        />
-
-        {/* 3. Room Availability Grid */}
+        <SummaryCards counts={counts} activeFilter={filterStatus} onSelectFilter={setFilterStatus} />
+        <DailyActivity selectedDate={selectedDate} onDateChange={setSelectedDate} rooms={rooms} bookings={bookings} />
         <RoomGrid
           rooms={filteredRooms}
           roomStatusMap={roomStatusMap}

@@ -81,7 +81,17 @@ export default function RoomDetailsModal({
 
         {/* Content */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 sm:space-y-4 touch-scroll">
-          
+          {/* Room Description & Features */}
+          {room.description && (
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                Room Description & Features
+              </span>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                {room.description}
+              </p>
+            </div>
+          )}
 
           {/* Quick Room Status Controls */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">

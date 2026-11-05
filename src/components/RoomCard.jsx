@@ -44,6 +44,11 @@ export default function RoomCard({
                   {room.roomName}
                 </p>
               )}
+              {room.description && (
+                <p className="text-[11px] text-slate-400 truncate max-w-[140px] sm:max-w-[200px]" title={room.description}>
+                  {room.description}
+                </p>
+              )}
             </div>
           </div>
 

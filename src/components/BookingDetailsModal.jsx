@@ -4,22 +4,11 @@ import StatusBadge from './StatusBadge';
 import { formatDateTime, formatDate, formatTime } from '../utils/dateHelpers';
 import { BOOKING_STATUSES, ROOM_STATUSES } from '../utils/availability';
 
-export default function BookingDetailsModal({
-  isOpen,
-  onClose,
-  booking,
-  rooms = [],
-  onEdit,
-  onCheckIn,
-  onCheckOut,
-  onCancel,
-}) {
+export default function BookingDetailsModal({isOpen,onClose,booking,rooms = [],onEdit,onCheckIn,onCheckOut,onCancel,}) {
   if (!isOpen || !booking) return null;
 
   const room = rooms.find((r) => r.id === booking.roomId);
   const status = booking.bookingStatus || BOOKING_STATUSES.CONFIRMED;
-
-  // Status map to badge status
   const badgeStatus =
     status === BOOKING_STATUSES.CONFIRMED
       ? ROOM_STATUSES.BOOKED
@@ -64,6 +53,26 @@ export default function BookingDetailsModal({
 
         {/* Content */}
         <div className="p-4 sm:p-5 space-y-3.5 sm:space-y-4 overflow-y-auto touch-scroll">
+          {/* Room Details & Description */}
+          {room && (
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                Room Information
+              </span>
+              <div className="flex items-center gap-2">
+                <DoorClosed className="w-4 h-4 text-slate-500 shrink-0" />
+                <span className="text-sm font-bold text-slate-800">
+                  Room {room.roomNumber} {room.roomName ? `• ${room.roomName}` : ''}
+                </span>
+              </div>
+              {room.description && (
+                <p className="text-xs text-slate-600 leading-relaxed pl-6 pt-0.5 whitespace-pre-wrap">
+                  {room.description}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Guest Information */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
