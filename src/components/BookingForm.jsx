@@ -5,24 +5,31 @@ import { validateBookingForm, checkBookingConflict } from '../utils/bookingValid
 import { BOOKING_STATUSES, ROOM_STATUSES, computeRoomStatus } from '../utils/availability';
 import { toDateTimeLocalValue, formatTime, formatDate } from '../utils/dateHelpers';
 
-function getDurationHours(option, customVal) {
+function getDurationHours(option, customVal, customUnit = 'days') {
   if (option === '3hr') return 3;
   if (option === '6hr') return 6;
   if (option === '1day') return 24;
   if (option === 'custom') {
     const val = parseFloat(customVal);
-    return isNaN(val) || val <= 0 ? null : val;
+    if (isNaN(val) || val <= 0) return null;
+    return customUnit === 'days' ? val * 24 : val;
   }
   return 24;
 }
 
-function getDurationLabel(option, customVal) {
+function getDurationLabel(option, customVal, customUnit = 'days') {
   if (option === '3hr') return '3 Hours';
   if (option === '6hr') return '6 Hours';
   if (option === '1day') return '1 Day';
   if (option === 'custom') {
     const val = parseFloat(customVal);
     if (!val || isNaN(val) || val <= 0) return 'Custom';
+    if (customUnit === 'days') {
+      if (val === 1) return '1 Day';
+      if (val === 7) return '1 Week (7 Days)';
+      if (val === 14) return '2 Weeks (14 Days)';
+      return `${val} Days`;
+    }
     return val === 1 ? '1 Hour' : `${val} Hours`;
   }
   return '1 Day';
@@ -45,7 +52,8 @@ export default function BookingForm({
     mobileNumber: '',
     roomId: '',
     durationOption: '1day',
-    customHours: '',
+    customHours: '2',
+    customUnit: 'days', // 'days' | 'hours'
     paymentMethod: 'Cash',
     paymentMethodOther: '',
     isCustomCheckIn: false,
@@ -62,7 +70,8 @@ export default function BookingForm({
     if (isOpen) {
       if (initialData) {
         let initialDurationOption = initialData.durationOption;
-        let initialCustomHours = initialData.durationHours ? String(initialData.durationHours) : '';
+        let initialCustomHours = initialData.durationHours ? String(initialData.durationHours) : '2';
+        let initialCustomUnit = 'days';
 
         if (!initialDurationOption && initialData.checkInDateTime && initialData.checkOutDateTime) {
           const diffHours = Math.round(
@@ -71,9 +80,23 @@ export default function BookingForm({
           if (diffHours === 3) initialDurationOption = '3hr';
           else if (diffHours === 6) initialDurationOption = '6hr';
           else if (diffHours === 24) initialDurationOption = '1day';
-          else if (diffHours > 0) {
+          else if (diffHours > 0 && diffHours % 24 === 0) {
+            initialDurationOption = 'custom';
+            initialCustomHours = String(diffHours / 24);
+            initialCustomUnit = 'days';
+          } else if (diffHours > 0) {
             initialDurationOption = 'custom';
             initialCustomHours = String(diffHours);
+            initialCustomUnit = 'hours';
+          }
+        } else if (initialDurationOption === 'custom' && initialData.durationHours) {
+          const dh = Number(initialData.durationHours);
+          if (dh >= 24 && dh % 24 === 0) {
+            initialCustomHours = String(dh / 24);
+            initialCustomUnit = 'days';
+          } else {
+            initialCustomHours = String(dh);
+            initialCustomUnit = 'hours';
           }
         }
 
@@ -86,6 +109,7 @@ export default function BookingForm({
           roomId: initialData.roomId || '',
           durationOption: initialDurationOption || '1day',
           customHours: initialCustomHours,
+          customUnit: initialCustomUnit,
           paymentMethod: isStandardMethod ? rawPayment : 'Other',
           paymentMethodOther: isStandardMethod ? '' : (rawPayment === 'Other' ? (initialData.paymentMethodOther || '') : rawPayment),
           isCustomCheckIn: true,
@@ -107,7 +131,8 @@ export default function BookingForm({
           mobileNumber: '',
           roomId: defaultRoomId || '',
           durationOption: '1day',
-          customHours: '',
+          customHours: '2',
+          customUnit: 'days',
           paymentMethod: 'Cash',
           paymentMethodOther: '',
           isCustomCheckIn: false,
@@ -122,7 +147,7 @@ export default function BookingForm({
   }, [isOpen, initialData, preselectedRoomId, rooms, bookings]);
 
   // Computed check-in and check-out dates
-  const hours = getDurationHours(formData.durationOption, formData.customHours) || 24;
+  const hours = getDurationHours(formData.durationOption, formData.customHours, formData.customUnit) || 24;
   const activeCheckIn = formData.isCustomCheckIn && formData.customCheckInTime
     ? new Date(formData.customCheckInTime)
     : (initialData?.checkInDateTime ? new Date(initialData.checkInDateTime) : new Date());
@@ -136,7 +161,7 @@ export default function BookingForm({
       return;
     }
 
-    const h = getDurationHours(formData.durationOption, formData.customHours);
+    const h = getDurationHours(formData.durationOption, formData.customHours, formData.customUnit);
     if (!h || h <= 0) {
       setConflictWarning(null);
       setConflictDetails(null);
@@ -167,6 +192,7 @@ export default function BookingForm({
     formData.roomId,
     formData.durationOption,
     formData.customHours,
+    formData.customUnit,
     formData.isCustomCheckIn,
     formData.customCheckInTime,
     bookings,
@@ -188,15 +214,15 @@ export default function BookingForm({
     if (formData.durationOption === 'custom') {
       const hoursVal = parseFloat(formData.customHours);
       if (!hoursVal || isNaN(hoursVal) || hoursVal <= 0) {
-        setErrors((prev) => ({ ...prev, duration: 'Please enter a valid number of hours' }));
-        toast.error('Please enter valid custom hours');
+        setErrors((prev) => ({ ...prev, duration: `Please enter a valid number of ${formData.customUnit || 'days'}` }));
+        toast.error(`Please enter a valid number of ${formData.customUnit || 'days'}`);
         return;
       }
     }
 
     const checkIn = activeCheckIn;
     const checkOut = activeCheckOut;
-    const durationLabel = getDurationLabel(formData.durationOption, formData.customHours);
+    const durationLabel = getDurationLabel(formData.durationOption, formData.customHours, formData.customUnit);
     const effectivePaymentMethod =
       formData.paymentMethod === 'Other' && formData.paymentMethodOther.trim()
         ? formData.paymentMethodOther.trim()
@@ -387,7 +413,7 @@ export default function BookingForm({
                 Duration <span className="text-rose-500">*</span>
               </span>
               <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                {getDurationLabel(formData.durationOption, formData.customHours)}
+                {getDurationLabel(formData.durationOption, formData.customHours, formData.customUnit)}
               </span>
             </label>
 
@@ -423,27 +449,107 @@ export default function BookingForm({
               })}
             </div>
 
-            {/* Custom Input Box if 'custom' is selected */}
+            {/* Custom Duration (Days or Hours) with Multi-Day / Week Presets */}
             {formData.durationOption === 'custom' && (
-              <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="1"
-                    max="720"
-                    step="1"
-                    placeholder="Enter custom duration (e.g. 4, 12, 48)"
-                    value={formData.customHours}
-                    onChange={(e) => handleChange('customHours', e.target.value)}
-                    className={`w-full pl-3 pr-14 py-2.5 text-base sm:text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[44px] ${
-                      errors.duration ? 'border-rose-400' : 'border-slate-200'
-                    }`}
-                    autoFocus
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                    hours
-                  </span>
+              <div className="mt-2.5 p-3 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                {/* Input + Unit Selector */}
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min="1"
+                      max={formData.customUnit === 'days' ? 365 : 720}
+                      step="1"
+                      placeholder={formData.customUnit === 'days' ? 'Enter days (e.g. 3, 7)' : 'Enter hours (e.g. 4, 12)'}
+                      value={formData.customHours}
+                      onChange={(e) => handleChange('customHours', e.target.value)}
+                      className={`w-full px-3 py-2 text-base sm:text-sm bg-slate-50 focus:bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[42px] ${
+                        errors.duration ? 'border-rose-400' : 'border-slate-200'
+                      }`}
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Unit toggle: Days vs Hours */}
+                  <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          customUnit: 'days',
+                          customHours: prev.customUnit === 'hours' && Number(prev.customHours) > 30 ? '2' : prev.customHours,
+                        }));
+                      }}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                        formData.customUnit === 'days'
+                          ? 'bg-white text-emerald-700 shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      Days
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          customUnit: 'hours',
+                          customHours: prev.customUnit === 'days' && Number(prev.customHours) > 24 ? '4' : prev.customHours,
+                        }));
+                      }}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                        formData.customUnit === 'hours'
+                          ? 'bg-white text-emerald-700 shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      Hours
+                    </button>
+                  </div>
                 </div>
+
+                {/* Quick Shortcuts: Dynamically changes between Days and Hours */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Presets:</span>
+                  {(formData.customUnit === 'days'
+                    ? [
+                        { label: '2 Days', val: '2' },
+                        { label: '3 Days', val: '3' },
+                        { label: '5 Days', val: '5' },
+                        { label: '1 Week', val: '7' },
+                        { label: '2 Weeks', val: '14' },
+                      ]
+                    : [
+                        { label: '2 hr', val: '2' },
+                        { label: '4 hr', val: '4' },
+                        { label: '8 hr', val: '8' },
+                        { label: '12 hr', val: '12' },
+                      ]
+                  ).map((preset) => {
+                    const isPresetActive = formData.customHours === preset.val;
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            customHours: preset.val,
+                          }));
+                        }}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+                          isPresetActive
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {errors.duration && (
                   <p className="text-[11px] text-rose-500 font-medium mt-1">{errors.duration}</p>
                 )}
@@ -458,7 +564,7 @@ export default function BookingForm({
                   Time Period
                 </span>
                 <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  {getDurationLabel(formData.durationOption, formData.customHours)}
+                  {getDurationLabel(formData.durationOption, formData.customHours, formData.customUnit)}
                 </span>
               </div>
 

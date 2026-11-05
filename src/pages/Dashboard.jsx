@@ -100,7 +100,6 @@ export default function Dashboard() {
         const tokens = rawQ.split(/\s+/).filter(Boolean);
         const roomNumberStr = String(room.roomNumber || '').toLowerCase();
         const roomNameStr = String(room.roomName || '').toLowerCase();
-        const roomDescriptionStr = String(room.description || '').toLowerCase();
         const statusStr = String(statusData.status || '').toLowerCase();
         const activeGuest = String(statusData.activeBooking?.guestName || '').toLowerCase();
         const activePhoneRaw = String(statusData.activeBooking?.mobileNumber || '').toLowerCase();
@@ -119,7 +118,6 @@ export default function Dashboard() {
           `rm ${roomNumberStr}`,
           roomNumberStr,
           roomNameStr,
-          roomDescriptionStr,
           statusStr,
           activeGuest,
           activePhoneRaw,
@@ -136,7 +134,6 @@ export default function Dashboard() {
         const directMatch =
           roomNumberStr.includes(cleanQ) ||
           roomNameStr.includes(cleanQ) ||
-          roomDescriptionStr.includes(cleanQ) ||
           activeGuest.includes(cleanQ) ||
           activePhoneRaw.includes(cleanQ) ||
           (cleanQ.replace(/[^0-9]/g, '').length >= 3 &&
@@ -338,8 +335,6 @@ export default function Dashboard() {
         onOpenFirebaseConfig={() => setIsFirebaseConfigOpen(true)}
         isRefreshing={isRefreshing}
       />
-
-      {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6 space-y-4 sm:space-y-6 pb-24 sm:pb-8">
         <SummaryCards counts={counts} activeFilter={filterStatus} onSelectFilter={setFilterStatus} />
         <DailyActivity selectedDate={selectedDate} onDateChange={setSelectedDate} rooms={rooms} bookings={bookings} />
